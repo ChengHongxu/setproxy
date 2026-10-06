@@ -1,0 +1,26 @@
+[package]
+name = "setproxy"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A cross-platform CLI tool to set/clear proxy environment variables"
+license = "MIT"
+repository = "https://github.com/<your-username>/setproxy"
+keywords = ["proxy", "cli", "environment", "cross-platform"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+clap = { version = "4.3.0", features = ["derive", "color"] }
+anyhow = "1.0"
+colored = "2.1"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+
+[profile.release]
+opt-level = "z"      # 优化体积
+lto = true           # 链接时优化
+codegen-units = 1    # 更好的优化
+strip = true         # 移除调试符号
+panic = "abort"      # 减小二进制体积
