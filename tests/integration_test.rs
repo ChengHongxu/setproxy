@@ -3,16 +3,16 @@ use predicates::prelude::*;
 
 #[test]
 fn test_help_command() {
-    let mut cmd = Command::cargo_bin("setproxy").unwrap();
+    let mut cmd = Command::cargo_bin("_setproxy").unwrap();
     cmd.arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("A cross-platform CLI tool"));
+        .stdout(predicate::str::contains("cross-platform CLI tool"));
 }
 
 #[test]
 fn test_version_command() {
-    let mut cmd = Command::cargo_bin("setproxy").unwrap();
+    let mut cmd = Command::cargo_bin("_setproxy").unwrap();
     cmd.arg("--version")
         .assert()
         .success()
@@ -21,7 +21,7 @@ fn test_version_command() {
 
 #[test]
 fn test_status_command() {
-    let mut cmd = Command::cargo_bin("setproxy").unwrap();
+    let mut cmd = Command::cargo_bin("_setproxy").unwrap();
     cmd.arg("status")
         .assert()
         .success()
@@ -29,28 +29,28 @@ fn test_status_command() {
 }
 
 #[test]
-fn test_clear_command() {
-    let mut cmd = Command::cargo_bin("setproxy").unwrap();
-    cmd.arg("clear")
+fn test_set_proxy_outputs_structured() {
+    let mut cmd = Command::cargo_bin("_setproxy").unwrap();
+    cmd.args(["127.0.0.1", "7890"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("unset http_proxy"));
+        .stdout(predicate::str::starts_with("SET"))
+        .stdout(predicate::str::contains("http://127.0.0.1:7890"))
+        .stdout(predicate::str::contains("socks5://127.0.0.1:7890"));
 }
 
 #[test]
-fn test_set_proxy_with_host_and_port() {
-    let mut cmd = Command::cargo_bin("setproxy").unwrap();
-    cmd.arg("192.168.1.1")
-        .arg("8080")
+fn test_clear_outputs_clear() {
+    let mut cmd = Command::cargo_bin("_setproxy").unwrap();
+    cmd.arg("clear")
         .assert()
         .success()
-        .stdout(predicate::str::contains("export http_proxy"))
-        .stdout(predicate::str::contains("http://192.168.1.1:8080"));
+        .stdout(predicate::str::is_match("^CLEAR\n?$").unwrap());
 }
 
 #[test]
 fn test_missing_arguments() {
-    let mut cmd = Command::cargo_bin("setproxy").unwrap();
+    let mut cmd = Command::cargo_bin("_setproxy").unwrap();
     cmd.assert()
         .failure()
         .stderr(predicate::str::contains("请提供代理地址和端口"));

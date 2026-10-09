@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "setproxy")]
+#[command(name = "_setproxy")]
 #[command(author, version, about = "A cross-platform CLI tool to manage proxy environment variables", long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
