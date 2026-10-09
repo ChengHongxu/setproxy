@@ -1,35 +1,5 @@
-# Rust
-target/
-Cargo.lock
-
-# Pixi
+/target/
 .pixi/
 pixi.lock
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# macOS
-.DS_Store
-
-# Linux
-.directory
-
-# Windows
-Thumbs.db
-desktop.ini
-
-# Backup files
-*.bak
-*.tmp
-
-# Logs
-*.log
-
-# Environment
 .env
-.env.local
+*.log
