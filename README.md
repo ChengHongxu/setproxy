@@ -12,30 +12,22 @@
 
 ## 安装
 
-### 快速安装（推荐）
+### Linux / macOS
 ```bash
 curl -fsSL https://raw.githubusercontent.com/<your-username>/setproxy/main/install.sh | sh
 ```
 
-安装后无需任何配置，直接使用 `setproxy`。
+### Windows (PowerShell)
+```powershell
+iwr -useb https://raw.githubusercontent.com/<your-username>/setproxy/main/install.ps1 | iex
+```
+
+安装后重启终端或运行：
+- **Linux/macOS**: `source ~/.zshrc` (或 `~/.bashrc`)
+- **Windows**: `. $PROFILE`
 
 ### 手动安装
-从 [Releases](https://github.com/<your-username>/setproxy/releases) 下载对应平台的二进制文件：
-
-**Linux/macOS:**
-```bash
-curl -Lo ~/.local/bin/_setproxy https://github.com/<your-username>/setproxy/releases/latest/download/_setproxy-linux-amd64
-chmod +x ~/.local/bin/_setproxy
-curl -fsSL https://raw.githubusercontent.com/<your-username>/setproxy/main/shell/setproxy.sh >> ~/.zshrc
-source ~/.zshrc
-```
-
-**Windows (PowerShell):**
-1. 下载 `_setproxy-windows-amd64.exe` 并重命名为 `_setproxy.exe` 放入 PATH
-2. 下载 `shell/setproxy.ps1` 并在 PowerShell profile 中加载：
-```powershell
-. ~/path/to/setproxy.ps1
-```
+从 [Releases](https://github.com/<your-username>/setproxy/releases) 下载对应平台的二进制文件。
 
 ## 用法
 
