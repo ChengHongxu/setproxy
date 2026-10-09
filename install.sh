@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-REPO="<your-username>/setproxy"
+REPO="ChengHongxu/setproxy"
 INSTALL_DIR="${HOME}/.local/bin"
 SHELL_FUNC_URL="https://raw.githubusercontent.com/${REPO}/main/shell/setproxy.sh"
 

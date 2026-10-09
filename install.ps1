@@ -1,12 +1,12 @@
 # setproxy Windows Installer
-# Usage: iwr -useb https://raw.githubusercontent.com/<your-username>/setproxy/main/install.ps1 | iex
+# Usage: iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
 # Detect architecture
 $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
 $asset = "_setproxy-windows-$arch.exe"
-$url = "https://github.com/<your-username>/setproxy/releases/latest/download/$asset"
+$url = "https://github.com/ChengHongxu/setproxy/releases/latest/download/$asset"
 
 Write-Host "🔍 Detecting system: Windows $arch" -ForegroundColor Cyan
 
@@ -30,7 +30,7 @@ try {
 }
 
 # Download shell function
-$shellFuncUrl = "https://raw.githubusercontent.com/<your-username>/setproxy/main/shell/setproxy.ps1"
+$shellFuncUrl = "https://raw.githubusercontent.com/ChengHongxu/setproxy/main/shell/setproxy.ps1"
 $shellFuncPath = "$installDir\setproxy.ps1"
 
 Write-Host "📥 Downloading PowerShell function..." -ForegroundColor Cyan

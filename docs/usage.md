@@ -41,7 +41,7 @@ setproxy clear
 
 一键安装：
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<your-username>/setproxy/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.sh | sh
 source ~/.zshrc  # 或 ~/.bashrc
 ```
 
@@ -49,7 +49,7 @@ source ~/.zshrc  # 或 ~/.bashrc
 
 一键安装：
 ```powershell
-iwr -useb https://raw.githubusercontent.com/<your-username>/setproxy/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps1 | iex
 . $PROFILE
 ```
 
@@ -161,7 +161,7 @@ setproxy clear
 1. **临时允许脚本执行**：
    ```powershell
    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-   iwr -useb https://raw.githubusercontent.com/<your-username>/setproxy/main/install.ps1 | iex
+   iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps1 | iex
    ```
 
 2. **或使用手动安装方式**
@@ -213,7 +213,7 @@ install:
 # .github/workflows/ci.yml
 - name: Setup proxy
   run: |
-    curl -fsSL https://raw.githubusercontent.com/<your-username>/setproxy/main/install.sh | sh
+    curl -fsSL https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.sh | sh
     source ~/.zshrc
     setproxy 127.0.0.1 7890
 ```
@@ -229,6 +229,6 @@ alias spc='setproxy clear'
 
 ## 更多帮助
 
-- [GitHub Issues](https://github.com/<your-username>/setproxy/issues)
+- [GitHub Issues](https://github.com/ChengHongxu/setproxy/issues)
 - [贡献指南](contributing.md)
 - [变更日志](changelog.md)

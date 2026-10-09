@@ -14,12 +14,12 @@
 
 ### Linux / macOS
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<your-username>/setproxy/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.sh | sh
 ```
 
 ### Windows (PowerShell)
 ```powershell
-iwr -useb https://raw.githubusercontent.com/<your-username>/setproxy/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps1 | iex
 ```
 
 安装后重启终端或运行：
@@ -27,7 +27,7 @@ iwr -useb https://raw.githubusercontent.com/<your-username>/setproxy/main/instal
 - **Windows**: `. $PROFILE`
 
 ### 手动安装
-从 [Releases](https://github.com/<your-username>/setproxy/releases) 下载对应平台的二进制文件。
+从 [Releases](https://github.com/ChengHongxu/setproxy/releases) 下载对应平台的二进制文件。
 
 ## 用法
 
@@ -48,7 +48,7 @@ setproxy clear             # 清除代理
 ## 从源码构建
 
 ```bash
-git clone https://github.com/<your-username>/setproxy
+git clone https://github.com/ChengHongxu/setproxy
 cd setproxy
 cargo build --release
 cp target/release/_setproxy ~/.local/bin/
