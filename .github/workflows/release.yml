@@ -84,12 +84,24 @@ jobs:
 
   conda-package:
     needs: release
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - platform: linux-64
+            os: ubuntu-latest
+          - platform: osx-64
+            os: macos-13  # Intel runner
+          - platform: osx-arm64
+            os: macos-latest  # Apple Silicon
+          - platform: win-64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Get version
         id: version
+        shell: bash
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Download release assets
@@ -99,38 +111,45 @@ jobs:
           merge-multiple: true
 
       - name: Generate checksums
+        shell: bash
         run: |
           mkdir -p recipe/checksums
           cd artifacts
           for file in *; do
-            sha256sum "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
+            sha256sum "$file" 2>/dev/null || shasum -a 256 "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
           done
           cd ..
           ls -la recipe/checksums/
 
       - name: Install pixi and rattler-build
+        shell: bash
         run: |
           curl -fsSL https://pixi.sh/install.sh | bash
           echo "$HOME/.pixi/bin" >> $GITHUB_PATH
           export PATH="$HOME/.pixi/bin:$PATH"
           pixi global install rattler-build
 
-      - name: Build conda packages
+      - name: Build conda package for ${{ matrix.platform }}
+        shell: bash
         run: |
-          # Build for each platform
-          for platform in linux-64 osx-64 osx-arm64 win-64; do
-            echo "Building for $platform..."
-            rattler-build build --recipe recipe/recipe.yaml --target-platform $platform || true
-          done
+          export PATH="$HOME/.pixi/bin:$PATH"
+          rattler-build build --recipe recipe/recipe.yaml --target-platform ${{ matrix.platform }}
 
-      - name: Upload conda packages
+      - name: Upload conda package
         uses: actions/upload-artifact@v4
         with:
-          name: conda-packages
+          name: conda-package-${{ matrix.platform }}
           path: output/**/*.conda
 
+  trigger-channel-update:
+    needs: conda-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Trigger packages repo update
-        if: success()
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CHANNEL_DISPATCH_TOKEN }}
