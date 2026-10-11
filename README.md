@@ -15,22 +15,22 @@
 ### 方式 1: Pixi/Conda (推荐)
 
 ```bash
-# 添加 channel（保留 conda-forge）
-pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io/packages/conda"]' --global
+# 添加 channel（追加，不影响其他 channels）
+pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
 
 # 安装
 pixi global install setproxy
 
-# 添加 shell function 到 ~/.zshrc 或 ~/.bashrc
-setproxy() {
-    eval "$(_setproxy "$@")"
-}
+# 初始化 shell 集成（一次性）
+echo 'source "$(which setproxy)"' >> ~/.zshrc   # zsh
+# 或
+echo 'source "$(which setproxy)"' >> ~/.bashrc  # bash
 
 # 重新加载 shell
 source ~/.zshrc  # 或 source ~/.bashrc
 ```
 
-添加 function 后 `setproxy` 命令就可以修改当前 shell 的环境变量了。
+`source "$(which setproxy)"` 会加载 shell function，使 `setproxy` 命令可以修改当前 shell 的环境变量。
 
 详见 [docs/pixi-install.md](docs/pixi-install.md)。
 

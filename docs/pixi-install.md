@@ -3,16 +3,16 @@
 ## 快速安装
 
 ```bash
-# 1. 添加 channel（保留 conda-forge）
-pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io/packages/conda"]' --global
+# 1. 添加 channel（追加，不影响已有 channels）
+pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
 
 # 2. 安装
 pixi global install setproxy
 
-# 3. 添加 shell function 到 ~/.zshrc 或 ~/.bashrc
-setproxy() {
-    eval "$(_setproxy "$@")"
-}
+# 3. 初始化 shell 集成（一次性）
+echo 'source "$(which setproxy)"' >> ~/.zshrc   # zsh 用户
+# 或
+echo 'source "$(which setproxy)"' >> ~/.bashrc  # bash 用户
 
 # 4. 重新加载 shell
 source ~/.zshrc  # 或 source ~/.bashrc
@@ -42,15 +42,15 @@ setproxy clear
 
 ## 关于 channel 配置
 
-推荐使用：
+推荐使用追加方式，不影响已有 channels：
 ```bash
-pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io/packages/conda"]' --global
+pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
 ```
 
 这样可以：
-- ✅ 保留 `conda-forge`，可以安装其他 conda 包
+- ✅ 保留 `conda-forge` 及其他已有 channels
 - ✅ 添加自定义 channel，可以安装 `setproxy`
-- ✅ 优先级：自定义 channel > conda-forge
+- ✅ 不会覆盖现有配置
 
 ## 卸载
 
