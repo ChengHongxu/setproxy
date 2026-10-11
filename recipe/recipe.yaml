@@ -19,32 +19,29 @@ build:
     - if: unix
       then:
         - mkdir -p $PREFIX/bin
-        - cd $BUILD_PREFIX
         - |
           if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
             case "$(uname -s)-$(uname -m)" in
               Linux-x86_64)
-                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-amd64
+                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-amd64
                 ;;
               Linux-aarch64)
-                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-arm64
+                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-arm64
                 ;;
               Darwin-x86_64)
-                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-amd64
+                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-amd64
                 ;;
               Darwin-arm64)
-                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-arm64
+                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-arm64
                 ;;
             esac
-            chmod +x _setproxy
-            install -m 755 _setproxy $PREFIX/bin/_setproxy
+            chmod +x $PREFIX/bin/_setproxy
             install -m 755 shell/setproxy-wrapper.sh $PREFIX/bin/setproxy
           fi
     - if: win
       then:
         - mkdir %PREFIX%\\Scripts
-        - curl -fsSL -o _setproxy.exe https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-windows-amd64.exe
-        - copy _setproxy.exe %PREFIX%\\Scripts\\_setproxy.exe
+        - curl -fsSL -o %PREFIX%\\Scripts\\_setproxy.exe https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-windows-amd64.exe
         - copy shell\\setproxy-wrapper.ps1 %PREFIX%\\Scripts\\setproxy.ps1
 
 requirements:
