@@ -8,53 +8,48 @@ package:
   version: ${{ version }}
 
 source:
-  # Download pre-built binaries from GitHub releases
-  # rattler-build will use the appropriate source based on target platform
-  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-amd64
-    sha256: file://checksums/linux-amd64.sha256
-    file_name: _setproxy
-    if: linux and x86_64
-
-  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-arm64
-    sha256: file://checksums/linux-arm64.sha256
-    file_name: _setproxy
-    if: linux and aarch64
-
-  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-amd64
-    sha256: file://checksums/darwin-amd64.sha256
-    file_name: _setproxy
-    if: osx and x86_64
-
-  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-arm64
-    sha256: file://checksums/darwin-arm64.sha256
-    file_name: _setproxy
-    if: osx and arm64
-
-  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-windows-amd64.exe
-    sha256: file://checksums/windows-amd64.sha256
-    file_name: _setproxy.exe
-    if: win
-
-  # Also need the shell wrapper scripts from the repo
+  # Get shell wrapper scripts from the repo
   - git: https://github.com/ChengHongxu/setproxy.git
     tag: v${{ version }}
-    folder: repo
 
 build:
   number: 0
   script:
+    # Download the appropriate binary for this platform
     - if: unix
       then:
         - mkdir -p $PREFIX/bin
-        - install -m 755 _setproxy $PREFIX/bin/_setproxy
-        - install -m 755 repo/shell/setproxy-wrapper.sh $PREFIX/bin/setproxy
+        - cd $BUILD_PREFIX
+        - |
+          if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
+            case "$(uname -s)-$(uname -m)" in
+              Linux-x86_64)
+                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-amd64
+                ;;
+              Linux-aarch64)
+                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-arm64
+                ;;
+              Darwin-x86_64)
+                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-amd64
+                ;;
+              Darwin-arm64)
+                curl -fsSL -o _setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-arm64
+                ;;
+            esac
+            chmod +x _setproxy
+            install -m 755 _setproxy $PREFIX/bin/_setproxy
+            install -m 755 shell/setproxy-wrapper.sh $PREFIX/bin/setproxy
+          fi
     - if: win
       then:
         - mkdir %PREFIX%\\Scripts
+        - curl -fsSL -o _setproxy.exe https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-windows-amd64.exe
         - copy _setproxy.exe %PREFIX%\\Scripts\\_setproxy.exe
-        - copy repo\\shell\\setproxy-wrapper.ps1 %PREFIX%\\Scripts\\setproxy.ps1
+        - copy shell\\setproxy-wrapper.ps1 %PREFIX%\\Scripts\\setproxy.ps1
 
 requirements:
+  build:
+    - curl
   run:
     - bash  # [unix]
 
@@ -67,7 +62,7 @@ about:
   homepage: https://github.com/ChengHongxu/setproxy
   repository: https://github.com/ChengHongxu/setproxy
   license: MIT
-  license_file: repo/LICENSE
+  license_file: LICENSE
   summary: Cross-platform proxy environment variable manager
   description: |
     setproxy is a CLI tool to manage proxy environment variables
