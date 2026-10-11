@@ -3,6 +3,7 @@ set -e
 
 REPO="ChengHongxu/setproxy"
 INSTALL_DIR="${HOME}/.local/bin"
+INSTALL_SHARE_DIR="${HOME}/.local/share/setproxy"
 SHELL_FUNC_URL="https://raw.githubusercontent.com/${REPO}/main/shell/setproxy.sh"
 
 # Detect OS and arch
@@ -45,23 +46,23 @@ if [ -n "${SHELL_RC}" ]; then
   fi
 fi
 
-# Install shell function
-FUNC_MARKER="# setproxy shell function"
+# Install shell function to shared directory
+mkdir -p "${INSTALL_SHARE_DIR}"
+curl -fsSL "${SHELL_FUNC_URL}" -o "${INSTALL_SHARE_DIR}/setproxy.sh"
+
+# Add source line to shell RC
+SOURCE_LINE="source \"${INSTALL_SHARE_DIR}/setproxy.sh\""
 if [ -n "${SHELL_RC}" ]; then
-  if ! grep -q "${FUNC_MARKER}" "${SHELL_RC}" 2>/dev/null; then
+  if ! grep -q "source.*setproxy.sh" "${SHELL_RC}" 2>/dev/null; then
     echo "" >> "${SHELL_RC}"
-    echo "${FUNC_MARKER}" >> "${SHELL_RC}"
-    curl -fsSL "${SHELL_FUNC_URL}" >> "${SHELL_RC}"
-    echo "Shell function added to ${SHELL_RC}"
-  elif ! grep -q "setproxy()" "${SHELL_RC}" 2>/dev/null; then
-    # Marker exists but function is missing, append it
-    curl -fsSL "${SHELL_FUNC_URL}" >> "${SHELL_RC}"
-    echo "Shell function added to ${SHELL_RC}"
+    echo "# setproxy - source shell function" >> "${SHELL_RC}"
+    echo "${SOURCE_LINE}" >> "${SHELL_RC}"
+    echo "Shell function source line added to ${SHELL_RC}"
   else
-    echo "Shell function already present"
+    echo "Shell function source line already present"
   fi
 else
-  echo "Unknown shell, skipping shell function installation"
+  echo "Unknown shell, skipping shell RC modification"
 fi
 
 echo ""
