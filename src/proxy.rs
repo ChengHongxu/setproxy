@@ -1,6 +1,10 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use colored::*;
 use std::env;
+
+#[cfg(target_os = "linux")]
+use anyhow::Context;
+#[cfg(target_os = "linux")]
 use std::process::Command;
 
 /// Proxy configuration
