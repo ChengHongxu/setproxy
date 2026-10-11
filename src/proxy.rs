@@ -42,9 +42,7 @@ pub fn detect_wsl_host() -> Result<String> {
                 .context("Cannot get WSL host IP")?;
 
             if output.status.success() {
-                let host = String::from_utf8_lossy(&output.stdout)
-                    .trim()
-                    .to_string();
+                let host = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
                 if !host.is_empty() {
                     return Ok(host);
@@ -81,7 +79,14 @@ pub fn show_status() -> Result<()> {
     println!("{} 当前代理状态:", "🌐".bold());
     println!();
 
-    let vars = ["http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"];
+    let vars = [
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+    ];
     let mut found = false;
 
     for var in &vars {

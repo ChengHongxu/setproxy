@@ -27,7 +27,7 @@ setproxy() {
 }
 ```
 
-详见 [PIXI_INSTALL.md](PIXI_INSTALL.md)。
+详见 [docs/pixi-install.md](docs/pixi-install.md)。
 
 ### 方式 2: 一键安装脚本
 

@@ -1,5 +1,23 @@
+# Rust
 /target/
-.pixi/
-pixi.lock
-.env
-*.log
+Cargo.lock
+*.rs.bk
+*.pdb
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+
+# Conda/Pixi build artifacts
+output/
+recipe/checksums/
