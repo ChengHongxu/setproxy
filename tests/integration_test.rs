@@ -25,7 +25,7 @@ fn test_status_command() {
     cmd.arg("status")
         .assert()
         .success()
-        .stdout(predicate::str::contains("当前代理状态"));
+        .stderr(predicate::str::contains("当前代理状态"));
 }
 
 #[test]
