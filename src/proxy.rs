@@ -76,8 +76,8 @@ pub fn clear_proxy() -> Result<()> {
 
 /// Show current proxy status
 pub fn show_status() -> Result<()> {
-    println!("{} 当前代理状态:", "🌐".bold());
-    println!();
+    eprintln!("{} 当前代理状态:", "🌐".bold());
+    eprintln!();
 
     let vars = [
         "http_proxy",
@@ -92,14 +92,14 @@ pub fn show_status() -> Result<()> {
     for var in &vars {
         if let Ok(value) = env::var(var) {
             if !value.is_empty() {
-                println!("  {} = {}", var.cyan(), value.green());
+                eprintln!("  {} = {}", var.cyan(), value.green());
                 found = true;
             }
         }
     }
 
     if !found {
-        println!("  {}", "未设置代理".yellow());
+        eprintln!("  {}", "未设置代理".yellow());
     }
 
     Ok(())
