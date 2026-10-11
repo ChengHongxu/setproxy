@@ -47,8 +47,7 @@ build:
 requirements:
   build:
     - curl
-  run:
-    - bash  # [unix]
+  # No runtime dependencies - bash/zsh are system packages
 
 tests:
   - script:
