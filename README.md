@@ -16,7 +16,7 @@
 
 ```bash
 # 添加 channel
-pixi config append channels "https://chenghongxu.github.io/packages/conda" --global
+pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
 
 # 安装
 pixi global install setproxy
