@@ -136,7 +136,7 @@ jobs:
         with:
           token: ${{ secrets.CHANNEL_DISPATCH_TOKEN }}
           repository: ChengHongxu/packages
-          event-type: add-package
+          event-type: add-conda-package
           client-payload: |
             {
               "package": "setproxy",
