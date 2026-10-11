@@ -9,14 +9,14 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 # 2. 安装
 pixi global install setproxy
 
-# 3. 初始化 shell 集成（一次性）
-echo 'eval "$(_setproxy shell-init)"' >> ~/.zshrc   # zsh 用户
-# 或
-echo 'eval "$(_setproxy shell-init)"' >> ~/.bashrc  # bash 用户
-
-# 4. 重新加载 shell
-source ~/.zshrc  # 或 source ~/.bashrc
+# 3. 重开终端即可使用 ✓
 ```
+
+首次运行任意 `_setproxy` 命令时，会自动检测 shell 集成是否已配置：
+- 未配置时：自动将 `eval "$(_setproxy shell-init)"` 写入 `~/.zshrc` 或 `~/.bashrc`
+- 已配置时：静默跳过，不重复写入
+
+重开终端后 `setproxy` 即可直接使用。
 
 ## 使用
 
@@ -64,10 +64,11 @@ pixi global uninstall setproxy
 
 ### 找不到 setproxy 命令
 
-确保已添加 function 到 shell 配置并重新加载：
+首次运行任意命令会自动配置，例如：
 ```bash
-source ~/.zshrc  # 或 source ~/.bashrc
+_setproxy status
 ```
+然后重开终端即可。
 
 ### 代理未生效
 
@@ -77,7 +78,11 @@ type setproxy
 # 应该显示: setproxy is a shell function
 ```
 
-如果显示 `setproxy is /home/.../.pixi/bin/setproxy`，说明没有正确配置 function。
+如果显示 `setproxy is /home/.../.pixi/bin/setproxy`，说明 shell function 还未加载。运行：
+```bash
+_setproxy status  # 触发自动配置
+```
+然后重开终端。
 
 检查环境变量：
 ```bash
