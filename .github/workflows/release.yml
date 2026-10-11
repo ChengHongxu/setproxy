@@ -116,7 +116,18 @@ jobs:
           mkdir -p recipe/checksums
           cd artifacts
           for file in *; do
-            sha256sum "$file" 2>/dev/null || shasum -a 256 "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
+            # Skip directories
+            [ -f "$file" ] || continue
+
+            # Use certUtil on Windows, sha256sum on Linux, shasum on macOS
+            if command -v sha256sum &> /dev/null; then
+              sha256sum "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
+            elif command -v shasum &> /dev/null; then
+              shasum -a 256 "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
+            else
+              # Windows: use certUtil
+              certUtil -hashfile "$file" SHA256 | findstr /v "SHA256 CertUtil" > ../recipe/checksums/"${file#_setproxy-}".sha256
+            fi
           done
           cd ..
           ls -la recipe/checksums/
