@@ -89,10 +89,11 @@ jobs:
         include:
           - platform: linux-64
             os: ubuntu-latest
-          - platform: osx-64
-            os: macos-13  # Intel runner
+          # Skip osx-64 due to GitHub Actions Intel Mac runner capacity issues
+          # - platform: osx-64
+          #   os: macos-13  # Intel runner
           - platform: osx-arm64
-            os: macos-latest  # Apple Silicon
+            os: macos-latest  # Apple Silicon (also works on Intel Macs via Rosetta)
           - platform: win-64
             os: windows-latest
     runs-on: ${{ matrix.os }}
