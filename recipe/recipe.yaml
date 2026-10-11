@@ -19,6 +19,7 @@ build:
     - if: unix
       then:
         - mkdir -p $PREFIX/bin
+        - mkdir -p $PREFIX/etc/conda/activate.d
         - |
           if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
             case "$(uname -s)-$(uname -m)" in
@@ -36,7 +37,8 @@ build:
                 ;;
             esac
             chmod +x $PREFIX/bin/_setproxy
-            install -m 755 shell/setproxy-wrapper.sh $PREFIX/bin/setproxy
+            install -m 755 shell/setproxy $PREFIX/bin/setproxy
+            install -m 644 shell/activate.sh $PREFIX/etc/conda/activate.d/setproxy.sh
           fi
     - if: win
       then:

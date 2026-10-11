@@ -3,21 +3,17 @@
 ## 快速安装
 
 ```bash
-# 1. 添加 channel
-pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
+# 1. 添加 channel（保留 conda-forge）
+pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io/packages/conda"]' --global
 
 # 2. 安装
 pixi global install setproxy
 
-# 3. 配置 shell function（重要！）
-# 添加到 ~/.zshrc 或 ~/.bashrc：
-setproxy() {
-    eval "$(_setproxy "$@")"
-}
-
-# 4. 重新加载 shell 或运行
+# 3. 重新加载 shell 或打开新终端
 source ~/.zshrc  # 或 source ~/.bashrc
 ```
+
+✨ **就这样！** 安装后 `setproxy` 命令立即可用，无需手动配置。
 
 ## 使用
 
@@ -35,9 +31,31 @@ setproxy status
 setproxy clear
 ```
 
-## 为什么需要 shell function？
+## 工作原理
 
-conda 包运行在子进程中，无法直接修改父 shell 的环境变量。通过 `eval` wrapper，我们可以让 `_setproxy` 的输出在当前 shell 中执行，从而修改环境变量。
+Pixi 安装时会自动：
+1. 安装 `_setproxy` 二进制
+2. 安装 `setproxy` wrapper 脚本
+3. 配置 conda activation script，在环境激活时定义 `setproxy` function
+
+这样你就可以直接使用 `setproxy` 命令，无需手动配置。
+
+## 关于 channel 配置
+
+推荐使用：
+```bash
+pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io/packages/conda"]' --global
+```
+
+这样可以：
+- ✅ 保留 `conda-forge`，可以安装其他 conda 包
+- ✅ 添加自定义 channel，可以安装 `setproxy`
+
+**不推荐**使用 `append`：
+```bash
+# ❌ 会覆盖而不是追加
+pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
+```
 
 ## 卸载
 
@@ -47,33 +65,36 @@ pixi global uninstall setproxy
 
 ## 故障排查
 
-### 找不到 _setproxy
+### 找不到 setproxy 命令
 
-确保 pixi 的 bin 目录在 PATH 中：
-
+重新加载 shell：
 ```bash
-echo $PATH | grep .pixi
+source ~/.zshrc  # 或 source ~/.bashrc
 ```
 
-如果没有，添加到 shell 配置：
-
-```bash
-export PATH="$HOME/.pixi/bin:$PATH"
-```
-
-### setproxy 命令不存在
-
-确保已添加 shell function 到 `~/.zshrc` 或 `~/.bashrc`，并重新加载。
+或打开新终端窗口。
 
 ### 代理未生效
 
 检查环境变量：
-
 ```bash
 env | grep -i proxy
 ```
 
-确保使用了 function 而非直接运行二进制。
+如果 `setproxy` 命令存在但环境变量未设置，尝试：
+```bash
+# 手动 source wrapper
+source $(which setproxy)
+setproxy 127.0.0.1 7890
+```
+
+### pixi 找不到包
+
+清除缓存后重试：
+```bash
+rm -rf ~/.cache/rattler/cache/repodata/
+pixi global install setproxy
+```
 
 ## 更多信息
 

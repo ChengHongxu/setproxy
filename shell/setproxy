@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# setproxy - Smart wrapper for _setproxy binary
+# Automatically handles eval for shell integration
+
+# Find _setproxy binary
+SETPROXY_BIN="${SETPROXY_BIN:-$(command -v _setproxy 2>/dev/null)}"
+
+if [ -z "$SETPROXY_BIN" ]; then
+    echo "✗ _setproxy binary not found in PATH" >&2
+    echo "Please ensure setproxy is properly installed." >&2
+    exit 1
+fi
+
+# Check if we're being sourced or executed
+if [ -n "$BASH_VERSION" ]; then
+    # Bash
+    (return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
+elif [ -n "$ZSH_VERSION" ]; then
+    # Zsh
+    [[ $ZSH_EVAL_CONTEXT =~ :file$ ]] && SOURCED=1 || SOURCED=0
+else
+    # Unknown shell, assume executed
+    SOURCED=0
+fi
+
+if [ "$SOURCED" = "1" ]; then
+    # Being sourced - define the function
+    setproxy() {
+        eval "$(_setproxy "$@")"
+    }
+else
+    # Being executed directly
+    # For commands that don't modify environment, execute directly
+    # For commands that do, show instructions
+    case "${1:-}" in
+        status|--help|-h|--version|-V)
+            # These commands don't modify environment, safe to run directly
+            exec "$SETPROXY_BIN" "$@"
+            ;;
+        *)
+            # Commands that modify environment need eval
+            echo "⚠️  setproxy needs to modify your shell's environment variables." >&2
+            echo "" >&2
+            echo "Please use one of these methods:" >&2
+            echo "" >&2
+            echo "Method 1 - Add to your shell RC file (~/.bashrc or ~/.zshrc):" >&2
+            echo "" >&2
+            echo "    setproxy() { eval \"\$(_setproxy \"\$@\")\"; }" >&2
+            echo "" >&2
+            echo "Method 2 - Source this wrapper:" >&2
+            echo "" >&2
+            echo "    source \$(which setproxy)" >&2
+            echo "    setproxy 127.0.0.1 7890" >&2
+            echo "" >&2
+            echo "Method 3 - Use eval directly:" >&2
+            echo "" >&2
+            echo "    eval \"\$(setproxy $*)\"" >&2
+            echo "" >&2
+            exit 1
+            ;;
+    esac
+fi
