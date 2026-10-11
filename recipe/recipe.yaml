@@ -1,0 +1,86 @@
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: setproxy
+  version: ${{ version }}
+
+source:
+  # Download pre-built binaries from GitHub releases
+  # rattler-build will use the appropriate source based on target platform
+  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-amd64
+    sha256: file://checksums/linux-amd64.sha256
+    file_name: _setproxy
+    if: linux and x86_64
+
+  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-arm64
+    sha256: file://checksums/linux-arm64.sha256
+    file_name: _setproxy
+    if: linux and aarch64
+
+  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-amd64
+    sha256: file://checksums/darwin-amd64.sha256
+    file_name: _setproxy
+    if: osx and x86_64
+
+  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-arm64
+    sha256: file://checksums/darwin-arm64.sha256
+    file_name: _setproxy
+    if: osx and arm64
+
+  - url: https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-windows-amd64.exe
+    sha256: file://checksums/windows-amd64.sha256
+    file_name: _setproxy.exe
+    if: win
+
+  # Also need the shell wrapper scripts from the repo
+  - git: https://github.com/ChengHongxu/setproxy.git
+    tag: v${{ version }}
+    folder: repo
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - mkdir -p $PREFIX/bin
+        - install -m 755 _setproxy $PREFIX/bin/_setproxy
+        - install -m 755 repo/shell/setproxy-wrapper.sh $PREFIX/bin/setproxy
+    - if: win
+      then:
+        - mkdir %PREFIX%\\Scripts
+        - copy _setproxy.exe %PREFIX%\\Scripts\\_setproxy.exe
+        - copy repo\\shell\\setproxy-wrapper.ps1 %PREFIX%\\Scripts\\setproxy.ps1
+
+requirements:
+  run:
+    - bash  # [unix]
+
+tests:
+  - script:
+      - _setproxy --version
+      - _setproxy --help
+
+about:
+  homepage: https://github.com/ChengHongxu/setproxy
+  repository: https://github.com/ChengHongxu/setproxy
+  license: MIT
+  license_file: repo/LICENSE
+  summary: Cross-platform proxy environment variable manager
+  description: |
+    setproxy is a CLI tool to manage proxy environment variables
+    with support for WSL2 auto-detection. Use it to quickly switch
+    proxy settings in your terminal.
+
+    Usage:
+      setproxy 127.0.0.1 7890  # Set proxy
+      setproxy wsl             # Auto-detect WSL2 host
+      setproxy status          # Show current proxy
+      setproxy clear           # Clear proxy
+  documentation: https://github.com/ChengHongxu/setproxy#readme
+
+extra:
+  recipe-maintainers:
+    - ChengHongxu
