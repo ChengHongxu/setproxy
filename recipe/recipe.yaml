@@ -19,7 +19,6 @@ build:
     - if: unix
       then:
         - mkdir -p $PREFIX/bin
-        - mkdir -p $PREFIX/etc/conda/activate.d
         - |
           if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
             case "$(uname -s)-$(uname -m)" in
@@ -37,8 +36,26 @@ build:
                 ;;
             esac
             chmod +x $PREFIX/bin/_setproxy
-            install -m 755 shell/setproxy $PREFIX/bin/setproxy
-            install -m 644 shell/activate.sh $PREFIX/etc/conda/activate.d/setproxy.sh
+            # Create simple wrapper that shows message for non-readonly commands
+            cat > $PREFIX/bin/setproxy << 'EOF'
+#!/bin/sh
+case "$1" in
+  status|--help|-h|--version|-V)
+    exec _setproxy "$@"
+    ;;
+  *)
+    echo "⚠️  To modify environment variables, add this function to your ~/.bashrc or ~/.zshrc:" >&2
+    echo "" >&2
+    echo "    setproxy() { eval \"\$(_setproxy \"\$@\")\"; }" >&2
+    echo "" >&2
+    echo "Then reload: source ~/.bashrc (or ~/.zshrc)" >&2
+    echo "" >&2
+    echo "Or run directly with: eval \"\$(setproxy $*)\"" >&2
+    exit 1
+    ;;
+esac
+EOF
+            chmod +x $PREFIX/bin/setproxy
           fi
     - if: win
       then:
@@ -66,6 +83,12 @@ about:
     setproxy is a CLI tool to manage proxy environment variables
     with support for WSL2 auto-detection. Use it to quickly switch
     proxy settings in your terminal.
+
+    ⚠️  IMPORTANT: After installation, add this to your ~/.bashrc or ~/.zshrc:
+
+        setproxy() { eval "$(_setproxy "$@")"; }
+
+    Then reload your shell with: source ~/.bashrc (or ~/.zshrc)
 
     Usage:
       setproxy 127.0.0.1 7890  # Set proxy

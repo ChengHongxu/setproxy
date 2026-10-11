@@ -21,11 +21,16 @@ pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io
 # 安装
 pixi global install setproxy
 
-# 重新加载 shell 或打开新终端
-source ~/.zshrc  # 或 ~/.bashrc
+# 添加 shell function 到 ~/.zshrc 或 ~/.bashrc
+setproxy() {
+    eval "$(_setproxy "$@")"
+}
+
+# 重新加载 shell
+source ~/.zshrc  # 或 source ~/.bashrc
 ```
 
-安装后 `setproxy` 命令立即可用，无需额外配置。
+添加 function 后 `setproxy` 命令就可以修改当前 shell 的环境变量了。
 
 详见 [docs/pixi-install.md](docs/pixi-install.md)。
 

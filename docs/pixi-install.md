@@ -9,11 +9,14 @@ pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io
 # 2. 安装
 pixi global install setproxy
 
-# 3. 重新加载 shell 或打开新终端
+# 3. 添加 shell function 到 ~/.zshrc 或 ~/.bashrc
+setproxy() {
+    eval "$(_setproxy "$@")"
+}
+
+# 4. 重新加载 shell
 source ~/.zshrc  # 或 source ~/.bashrc
 ```
-
-✨ **就这样！** 安装后 `setproxy` 命令立即可用，无需手动配置。
 
 ## 使用
 
@@ -31,14 +34,11 @@ setproxy status
 setproxy clear
 ```
 
-## 工作原理
+## 为什么需要 shell function？
 
-Pixi 安装时会自动：
-1. 安装 `_setproxy` 二进制
-2. 安装 `setproxy` wrapper 脚本
-3. 配置 conda activation script，在环境激活时定义 `setproxy` function
+由于 shell 的安全限制，子进程无法修改父进程的环境变量。通过添加一个简单的 function，我们用 `eval` 在当前 shell 执行 `_setproxy` 的输出，从而实现环境变量修改。
 
-这样你就可以直接使用 `setproxy` 命令，无需手动配置。
+这是一次性配置，之后就可以一直使用。
 
 ## 关于 channel 配置
 
@@ -50,12 +50,7 @@ pixi config set default-channels '["conda-forge", "https://chenghongxu.github.io
 这样可以：
 - ✅ 保留 `conda-forge`，可以安装其他 conda 包
 - ✅ 添加自定义 channel，可以安装 `setproxy`
-
-**不推荐**使用 `append`：
-```bash
-# ❌ 会覆盖而不是追加
-pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
-```
+- ✅ 优先级：自定义 channel > conda-forge
 
 ## 卸载
 
@@ -63,29 +58,30 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 pixi global uninstall setproxy
 ```
 
+然后从 shell 配置文件中删除 `setproxy` function。
+
 ## 故障排查
 
 ### 找不到 setproxy 命令
 
-重新加载 shell：
+确保已添加 function 到 shell 配置并重新加载：
 ```bash
 source ~/.zshrc  # 或 source ~/.bashrc
 ```
 
-或打开新终端窗口。
-
 ### 代理未生效
+
+检查是否使用了 function：
+```bash
+type setproxy
+# 应该显示: setproxy is a shell function
+```
+
+如果显示 `setproxy is /home/.../.pixi/bin/setproxy`，说明没有正确配置 function。
 
 检查环境变量：
 ```bash
 env | grep -i proxy
-```
-
-如果 `setproxy` 命令存在但环境变量未设置，尝试：
-```bash
-# 手动 source wrapper
-source $(which setproxy)
-setproxy 127.0.0.1 7890
 ```
 
 ### pixi 找不到包
