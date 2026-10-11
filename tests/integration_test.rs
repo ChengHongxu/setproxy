@@ -34,7 +34,7 @@ fn test_set_proxy_outputs_structured() {
     cmd.args(["127.0.0.1", "7890"])
         .assert()
         .success()
-        .stdout(predicate::str::starts_with("SET"))
+        .stdout(predicate::str::contains("export http_proxy="))
         .stdout(predicate::str::contains("http://127.0.0.1:7890"))
         .stdout(predicate::str::contains("socks5://127.0.0.1:7890"));
 }
@@ -45,7 +45,9 @@ fn test_clear_outputs_clear() {
     cmd.arg("clear")
         .assert()
         .success()
-        .stdout(predicate::str::is_match("^CLEAR\n?$").unwrap());
+        .stdout(predicate::str::contains("unset http_proxy"))
+        .stdout(predicate::str::contains("unset https_proxy"))
+        .stdout(predicate::str::contains("unset all_proxy"));
 }
 
 #[test]
