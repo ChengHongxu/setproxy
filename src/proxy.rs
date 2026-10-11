@@ -58,13 +58,21 @@ pub fn detect_wsl_host() -> Result<String> {
 
 /// Set proxy environment variables
 pub fn set_proxy(config: &ProxyConfig) -> Result<()> {
-    println!("SET {} {}", config.http_url(), config.socks5_url());
+    // Output shell commands for eval
+    println!("export http_proxy=\"{}\"", config.http_url());
+    println!("export https_proxy=\"{}\"", config.http_url());
+    println!("export all_proxy=\"{}\"", config.socks5_url());
+    println!("echo \"✓ 代理已启用: {}\"", config.http_url());
     Ok(())
 }
 
 /// Clear proxy environment variables
 pub fn clear_proxy() -> Result<()> {
-    println!("CLEAR");
+    // Output shell commands for eval
+    println!("unset http_proxy");
+    println!("unset https_proxy");
+    println!("unset all_proxy");
+    println!("echo \"✓ 代理已清除\"");
     Ok(())
 }
 
