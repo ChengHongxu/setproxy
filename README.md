@@ -12,12 +12,31 @@
 
 ## 安装
 
-### Linux / macOS
+### 方式 1: Pixi/Conda (推荐)
+
+```bash
+# 添加 channel
+pixi config append channels "https://chenghongxu.github.io/packages/conda" --global
+
+# 安装
+pixi global install setproxy
+
+# 添加 shell function 到 ~/.zshrc 或 ~/.bashrc
+setproxy() {
+    eval "$(_setproxy "$@")"
+}
+```
+
+详见 [PIXI_INSTALL.md](PIXI_INSTALL.md)。
+
+### 方式 2: 一键安装脚本
+
+#### Linux / macOS
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.sh | sh
 ```
 
-### Windows (PowerShell)
+#### Windows (PowerShell)
 ```powershell
 iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps1 | iex
 ```
@@ -26,7 +45,7 @@ iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps
 - **Linux/macOS**: `source ~/.zshrc` (或 `~/.bashrc`)
 - **Windows**: `. $PROFILE`
 
-### 手动安装
+### 方式 3: 手动安装
 从 [Releases](https://github.com/ChengHongxu/setproxy/releases) 下载对应平台的二进制文件。
 
 ## 用法
