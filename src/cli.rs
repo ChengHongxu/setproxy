@@ -41,4 +41,12 @@ pub enum Commands {
     ///   eval "$(_setproxy shell-init)"
     #[command(name = "shell-init")]
     ShellInit,
+
+    /// Auto-configure shell integration by patching ~/.zshrc or ~/.bashrc
+    ///
+    /// Run once after installation:
+    ///   _setproxy init
+    ///
+    /// Then reload your shell: source ~/.zshrc
+    Init,
 }

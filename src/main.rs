@@ -1,14 +1,26 @@
 mod cli;
 mod proxy;
+mod shell_init;
 
 use anyhow::Result;
 use clap::Parser;
 use cli::{Cli, Commands};
 use colored::*;
 use proxy::{clear_proxy, detect_wsl_host, set_proxy, show_status, ProxyConfig};
+use shell_init::{auto_configure_shell, is_shell_configured};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Auto-configure shell integration on first use (if not already configured)
+    // This runs silently in the background - only shows message if it adds the config
+    if !is_shell_configured() {
+        // Only attempt auto-configure for non-shell-init commands
+        // shell-init is meant to be used manually, don't auto-configure during it
+        if !matches!(cli.command, Some(Commands::ShellInit)) {
+            let _ = auto_configure_shell(); // Ignore errors, don't block actual command
+        }
+    }
 
     match cli.command {
         Some(Commands::Clear) => {
@@ -34,6 +46,10 @@ fn main() -> Result<()> {
     fi
 }}"#
             );
+        }
+        Some(Commands::Init) => {
+            // 手动触发 shell 集成配置
+            auto_configure_shell()?;
         }
         Some(Commands::Wsl { port }) => {
             // WSL2 自动检测模式
