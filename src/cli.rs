@@ -34,4 +34,11 @@ pub enum Commands {
         #[arg(default_value = "8090")]
         port: u16,
     },
+
+    /// Print shell function definition for eval-based shell integration
+    ///
+    /// Add this to your ~/.zshrc or ~/.bashrc:
+    ///   eval "$(_setproxy shell-init)"
+    #[command(name = "shell-init")]
+    ShellInit,
 }

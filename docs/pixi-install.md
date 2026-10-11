@@ -10,9 +10,9 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 pixi global install setproxy
 
 # 3. 初始化 shell 集成（一次性）
-echo 'source "$(which setproxy)"' >> ~/.zshrc   # zsh 用户
+echo 'eval "$(_setproxy shell-init)"' >> ~/.zshrc   # zsh 用户
 # 或
-echo 'source "$(which setproxy)"' >> ~/.bashrc  # bash 用户
+echo 'eval "$(_setproxy shell-init)"' >> ~/.bashrc  # bash 用户
 
 # 4. 重新加载 shell
 source ~/.zshrc  # 或 source ~/.bashrc

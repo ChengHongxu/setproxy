@@ -22,15 +22,15 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 pixi global install setproxy
 
 # 初始化 shell 集成（一次性）
-echo 'source "$(which setproxy)"' >> ~/.zshrc   # zsh
+echo 'eval "$(_setproxy shell-init)"' >> ~/.zshrc   # zsh
 # 或
-echo 'source "$(which setproxy)"' >> ~/.bashrc  # bash
+echo 'eval "$(_setproxy shell-init)"' >> ~/.bashrc  # bash
 
 # 重新加载 shell
 source ~/.zshrc  # 或 source ~/.bashrc
 ```
 
-`source "$(which setproxy)"` 会加载 shell function，使 `setproxy` 命令可以修改当前 shell 的环境变量。
+`eval "$(_setproxy shell-init)"` 会将 `setproxy` function 加载到当前 shell，使其可以修改当前 shell 的环境变量。
 
 详见 [docs/pixi-install.md](docs/pixi-install.md)。
 

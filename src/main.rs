@@ -17,6 +17,24 @@ fn main() -> Result<()> {
         Some(Commands::Status) => {
             show_status()?;
         }
+        Some(Commands::ShellInit) => {
+            // 输出 shell function 定义，供 eval 使用
+            // 用法: eval "$(_setproxy shell-init)" 添加到 ~/.zshrc 或 ~/.bashrc
+            println!(
+                r#"setproxy() {{
+    local _bin
+    _bin=$(command -v _setproxy 2>/dev/null) || {{
+        echo "✗ _setproxy not found, please install it first" >&2
+        return 1
+    }}
+    if [ "$1" = "status" ] || [ "$1" = "s" ]; then
+        "$_bin" "$@"
+    else
+        eval "$("$_bin" "$@")"
+    fi
+}}"#
+            );
+        }
         Some(Commands::Wsl { port }) => {
             // WSL2 自动检测模式
             match detect_wsl_host() {
