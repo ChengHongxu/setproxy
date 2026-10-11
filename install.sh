@@ -47,13 +47,21 @@ fi
 
 # Install shell function
 FUNC_MARKER="# setproxy shell function"
-if [ -n "${SHELL_RC}" ] && ! grep -q "${FUNC_MARKER}" "${SHELL_RC}" 2>/dev/null; then
-  echo "" >> "${SHELL_RC}"
-  echo "${FUNC_MARKER}" >> "${SHELL_RC}"
-  curl -fsSL "${SHELL_FUNC_URL}" >> "${SHELL_RC}"
-  echo "Shell function added to ${SHELL_RC}"
+if [ -n "${SHELL_RC}" ]; then
+  if ! grep -q "${FUNC_MARKER}" "${SHELL_RC}" 2>/dev/null; then
+    echo "" >> "${SHELL_RC}"
+    echo "${FUNC_MARKER}" >> "${SHELL_RC}"
+    curl -fsSL "${SHELL_FUNC_URL}" >> "${SHELL_RC}"
+    echo "Shell function added to ${SHELL_RC}"
+  elif ! grep -q "setproxy()" "${SHELL_RC}" 2>/dev/null; then
+    # Marker exists but function is missing, append it
+    curl -fsSL "${SHELL_FUNC_URL}" >> "${SHELL_RC}"
+    echo "Shell function added to ${SHELL_RC}"
+  else
+    echo "Shell function already present"
+  fi
 else
-  echo "Shell function already present (or unknown shell)"
+  echo "Unknown shell, skipping shell function installation"
 fi
 
 echo ""

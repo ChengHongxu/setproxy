@@ -3,6 +3,8 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "_setproxy")]
 #[command(author, version, about = "A cross-platform CLI tool to manage proxy environment variables", long_about = None)]
+#[command(args_conflicts_with_subcommands = true)]
+#[command(subcommand_precedence_over_arg = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
