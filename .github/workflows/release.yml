@@ -108,13 +108,12 @@ jobs:
           cd ..
           ls -la recipe/checksums/
 
-      - name: Install pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
-        with:
-          pixi-version: latest
-
-      - name: Install rattler-build
-        run: pixi global install rattler-build
+      - name: Install pixi and rattler-build
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "$HOME/.pixi/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.pixi/bin:$PATH"
+          pixi global install rattler-build
 
       - name: Build conda packages
         run: |
