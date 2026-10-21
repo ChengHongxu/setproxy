@@ -5,14 +5,14 @@ $ErrorActionPreference = "Stop"
 
 # Detect architecture
 $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
-$asset = "_setproxy-windows-$arch.exe"
+$asset = "setproxy-windows-$arch.exe"
 $url = "https://github.com/ChengHongxu/setproxy/releases/latest/download/$asset"
 
 Write-Host "🔍 Detecting system: Windows $arch" -ForegroundColor Cyan
 
 # Determine install location
 $installDir = "$env:LOCALAPPDATA\setproxy"
-$binPath = "$installDir\_setproxy.exe"
+$binPath = "$installDir\setproxy.exe"
 
 # Create directory
 if (-not (Test-Path $installDir)) {
@@ -29,17 +29,8 @@ try {
     exit 1
 }
 
-# Download shell function
-$shellFuncUrl = "https://raw.githubusercontent.com/ChengHongxu/setproxy/main/shell/setproxy.ps1"
-$shellFuncPath = "$installDir\setproxy.ps1"
-
-Write-Host "📥 Downloading PowerShell function..." -ForegroundColor Cyan
-try {
-    Invoke-WebRequest -Uri $shellFuncUrl -OutFile $shellFuncPath -UseBasicParsing
-} catch {
-    Write-Host "❌ Failed to download shell function" -ForegroundColor Red
-    exit 1
-}
+# Remove files installed by setproxy 0.2.x
+Remove-Item "$installDir\_setproxy.exe", "$installDir\setproxy.ps1" -ErrorAction SilentlyContinue
 
 # Add to PATH if not already there
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -53,29 +44,9 @@ if ($currentPath -notlike "*$installDir*") {
     $env:Path = "$env:Path;$installDir"
 }
 
-# Setup PowerShell profile
-$profileDir = Split-Path $PROFILE -Parent
-if (-not (Test-Path $profileDir)) {
-    New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
-}
+# Running this installer is the explicit opt-in to editing $PROFILE
+& $binPath init powershell
 
-$sourceCmd = ". `"$shellFuncPath`""
-if (Test-Path $PROFILE) {
-    $profileContent = Get-Content $PROFILE -Raw
-    if ($profileContent -notlike "*setproxy.ps1*") {
-        Write-Host "➕ Adding to PowerShell profile..." -ForegroundColor Cyan
-        Add-Content -Path $PROFILE -Value "`n# setproxy`n$sourceCmd"
-    }
-} else {
-    Write-Host "➕ Creating PowerShell profile..." -ForegroundColor Cyan
-    "# setproxy`n$sourceCmd" | Out-File -FilePath $PROFILE -Encoding UTF8
-}
-
-Write-Host ""
-Write-Host "✅ Installation complete!" -ForegroundColor Green
-Write-Host ""
-Write-Host "Please restart your PowerShell or run:" -ForegroundColor Yellow
-Write-Host "  . `$PROFILE" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Then you can use:" -ForegroundColor Yellow
 Write-Host "  setproxy 127.0.0.1 7890" -ForegroundColor Cyan

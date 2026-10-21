@@ -1,6 +1,6 @@
 [package]
 name = "setproxy"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 description = "A cross-platform proxy environment variable manager"
 license = "MIT"
@@ -18,7 +18,7 @@ assert_cmd = "2.0"
 predicates = "3.1"
 
 [[bin]]
-name = "_setproxy"
+name = "setproxy"
 path = "src/main.rs"
 
 [profile.release]

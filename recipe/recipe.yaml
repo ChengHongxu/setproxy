@@ -1,14 +1,14 @@
 schema_version: 1
 
 context:
-  version: "0.2.3"
+  version: "0.3.0"
 
 package:
   name: setproxy
   version: ${{ version }}
 
 source:
-  # Get shell wrapper scripts from the repo
+  # The repo provides LICENSE
   - git: https://github.com/ChengHongxu/setproxy.git
     tag: v${{ version }}
 
@@ -23,28 +23,24 @@ build:
           if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
             case "$(uname -s)-$(uname -m)" in
               Linux-x86_64)
-                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-amd64
+                curl -fsSL -o $PREFIX/bin/setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/setproxy-linux-amd64
                 ;;
               Linux-aarch64)
-                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-linux-arm64
+                curl -fsSL -o $PREFIX/bin/setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/setproxy-linux-arm64
                 ;;
               Darwin-x86_64)
-                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-amd64
+                curl -fsSL -o $PREFIX/bin/setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/setproxy-darwin-amd64
                 ;;
               Darwin-arm64)
-                curl -fsSL -o $PREFIX/bin/_setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-darwin-arm64
+                curl -fsSL -o $PREFIX/bin/setproxy https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/setproxy-darwin-arm64
                 ;;
             esac
-            chmod +x $PREFIX/bin/_setproxy
-            # Install shell wrapper (supports both sourcing and direct execution)
-            cp shell/setproxy $PREFIX/bin/setproxy
             chmod +x $PREFIX/bin/setproxy
           fi
     - if: win
       then:
         - mkdir %PREFIX%\\Scripts
-        - curl -fsSL -o %PREFIX%\\Scripts\\_setproxy.exe https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/_setproxy-windows-amd64.exe
-        - copy shell\\setproxy-wrapper.ps1 %PREFIX%\\Scripts\\setproxy.ps1
+        - curl -fsSL -o %PREFIX%\\Scripts\\setproxy.exe https://github.com/ChengHongxu/setproxy/releases/download/v${{ version }}/setproxy-windows-amd64.exe
 
 requirements:
   build:
@@ -53,8 +49,8 @@ requirements:
 
 tests:
   - script:
-      - _setproxy --version
-      - _setproxy --help
+      - setproxy --version
+      - setproxy --help
 
 about:
   homepage: https://github.com/ChengHongxu/setproxy
@@ -67,11 +63,10 @@ about:
     with support for WSL2 auto-detection. Use it to quickly switch
     proxy settings in your terminal.
 
-    After installation, add this to your ~/.bashrc or ~/.zshrc:
+    After installation, set up shell integration once and open a new terminal:
 
-        source "$(which setproxy)"
-
-    Then reload your shell with: source ~/.bashrc (or ~/.zshrc)
+        setproxy init            # detects zsh / bash / PowerShell
+        setproxy init zsh        # or name the shell
 
     Usage:
       setproxy 127.0.0.1 7890  # Set proxy

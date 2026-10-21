@@ -1,13 +1,16 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
-#[command(name = "_setproxy")]
+#[command(name = "setproxy")]
 #[command(author, version, about = "A cross-platform CLI tool to manage proxy environment variables", long_about = None)]
-#[command(args_conflicts_with_subcommands = true)]
 #[command(subcommand_precedence_over_arg = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
+
+    /// Set by the shell function: syntax of the code to print for it to evaluate
+    #[arg(long, value_enum, global = true, hide = true)]
+    pub syntax: Option<Syntax>,
 
     /// Proxy host (auto-detect WSL2 host if not specified)
     #[arg(value_name = "HOST")]
@@ -16,6 +19,22 @@ pub struct Cli {
     /// Proxy port
     #[arg(value_name = "PORT")]
     pub port: Option<u16>,
+}
+
+/// Language of the code printed on stdout
+#[derive(Clone, Copy, ValueEnum)]
+pub enum Syntax {
+    /// bash / zsh
+    Posix,
+    Powershell,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+pub enum Shell {
+    Zsh,
+    Bash,
+    #[value(alias = "pwsh")]
+    Powershell,
 }
 
 #[derive(Subcommand)]
@@ -35,18 +54,14 @@ pub enum Commands {
         port: u16,
     },
 
-    /// Print shell function definition for eval-based shell integration
-    ///
-    /// Add this to your ~/.zshrc or ~/.bashrc:
-    ///   eval "$(_setproxy shell-init)"
-    #[command(name = "shell-init")]
-    ShellInit,
+    /// Set up shell integration in your shell's startup file (run once)
+    Init {
+        /// Shell to set up; detected from the current shell if omitted
+        #[arg(value_enum)]
+        shell: Option<Shell>,
 
-    /// Auto-configure shell integration by patching ~/.zshrc or ~/.bashrc
-    ///
-    /// Run once after installation:
-    ///   _setproxy init
-    ///
-    /// Then reload your shell: source ~/.zshrc
-    Init,
+        /// Print the shell integration instead (this is what the startup file runs)
+        #[arg(long)]
+        print: bool,
+    },
 }

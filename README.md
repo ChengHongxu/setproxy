@@ -1,14 +1,14 @@
 # setproxy
 
-一个轻量、跨平台的代理设置工具。**直接使用，无需 `eval`。**
+一个轻量、跨平台的代理设置工具。
 
 ## 工作原理
 
-`setproxy` 由两部分组成：
-- `_setproxy`：Rust 二进制，负责计算输出结构化结果（可跨平台编译）
-- `setproxy`：Shell function（bash/zsh/PowerShell），source 后直接调用，可 export 环境变量
+子进程无法修改父进程的环境变量，所以 `setproxy` 由两部分组成：
+- `setproxy` 可执行文件（Rust）：计算代理地址，输出对应 shell 的代码（`export ...` 或 `$env:... = ...`）
+- `setproxy` shell 函数：`setproxy init` 把它接入 shell 启动文件，之后在当前 shell 中执行上面的代码
 
-这样设计是因为子进程无法修改父进程环境变量（UNIX 限制），这也是 nvm、conda、pyenv 等所有同类工具的标准做法。
+函数和可执行文件同名，函数优先于 PATH，所以平时用到的始终是函数。这与 zoxide、starship、mise 的做法一致：安装只负责放好可执行文件，shell 接入由你执行一次 `setproxy init` 完成，平时运行任何命令都不会修改启动文件。
 
 ## 安装
 
@@ -21,10 +21,9 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 # 安装
 pixi global install setproxy
 
-# 重开终端即可使用 ✓
+# 接入当前 shell（自动识别 zsh / bash / PowerShell），然后重开终端
+setproxy init
 ```
-
-首次运行任意 `_setproxy` 命令时，会自动检测并配置 shell 集成（写入 `~/.zshrc` 或 `~/.bashrc`）。重开终端后 `setproxy` 命令即可直接使用。
 
 详见 [docs/pixi-install.md](docs/pixi-install.md)。
 
@@ -40,22 +39,25 @@ curl -fsSL https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.s
 iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps1 | iex
 ```
 
-安装后重启终端或运行：
+安装脚本会自动执行 `setproxy init`（运行安装脚本即视为同意修改启动文件）。安装后重启终端或运行：
 - **Linux/macOS**: `source ~/.zshrc` (或 `~/.bashrc`)
 - **Windows**: `. $PROFILE`
 
 ### 方式 3: 手动安装
-从 [Releases](https://github.com/ChengHongxu/setproxy/releases) 下载对应平台的二进制文件。
+从 [Releases](https://github.com/ChengHongxu/setproxy/releases) 下载对应平台的二进制文件，命名为 `setproxy`，放到 PATH 中，再运行 `setproxy init`。
 
 ## 用法
 
 ```bash
+setproxy init              # 首次使用：接入 shell（也可指定 zsh / bash / pwsh）
 setproxy 127.0.0.1 7890    # 设置代理
 setproxy wsl               # WSL2 自动检测宿主机 IP
 setproxy wsl 7890          # WSL2 指定端口
 setproxy status            # 查看状态
 setproxy clear             # 清除代理
 ```
+
+没有执行过 `setproxy init`，或者执行后还没重开终端，`setproxy` 会提示下一步该做什么，不会修改任何文件。
 
 设置后生效的环境变量：
 - `http_proxy` / `https_proxy` → `http://host:port`
@@ -69,7 +71,8 @@ setproxy clear             # 清除代理
 git clone https://github.com/ChengHongxu/setproxy
 cd setproxy
 cargo build --release
-cp target/release/_setproxy ~/.local/bin/
+cp target/release/setproxy ~/.local/bin/
+setproxy init
 ```
 
 ## 许可证

@@ -13,20 +13,20 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            asset: _setproxy-linux-amd64
+            asset: setproxy-linux-amd64
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            asset: _setproxy-linux-arm64
+            asset: setproxy-linux-arm64
             cross: true
           - os: macos-latest
             target: x86_64-apple-darwin
-            asset: _setproxy-darwin-amd64
+            asset: setproxy-darwin-amd64
           - os: macos-latest
             target: aarch64-apple-darwin
-            asset: _setproxy-darwin-arm64
+            asset: setproxy-darwin-arm64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            asset: _setproxy-windows-amd64.exe
+            asset: setproxy-windows-amd64.exe
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -50,12 +50,12 @@ jobs:
       - name: Rename binary (Unix)
         if: matrix.os != 'windows-latest'
         run: |
-          cp target/${{ matrix.target }}/release/_setproxy ${{ matrix.asset }}
+          cp target/${{ matrix.target }}/release/setproxy ${{ matrix.asset }}
           strip ${{ matrix.asset }} || true
 
       - name: Rename binary (Windows)
         if: matrix.os == 'windows-latest'
-        run: copy target\${{ matrix.target }}\release\_setproxy.exe ${{ matrix.asset }}
+        run: copy target\${{ matrix.target }}\release\setproxy.exe ${{ matrix.asset }}
         shell: cmd
 
       - name: Upload artifact
@@ -122,12 +122,12 @@ jobs:
 
             # Use certUtil on Windows, sha256sum on Linux, shasum on macOS
             if command -v sha256sum &> /dev/null; then
-              sha256sum "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
+              sha256sum "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#setproxy-}".sha256
             elif command -v shasum &> /dev/null; then
-              shasum -a 256 "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#_setproxy-}".sha256
+              shasum -a 256 "$file" | cut -d' ' -f1 > ../recipe/checksums/"${file#setproxy-}".sha256
             else
               # Windows: use certUtil
-              certUtil -hashfile "$file" SHA256 | findstr /v "SHA256 CertUtil" > ../recipe/checksums/"${file#_setproxy-}".sha256
+              certUtil -hashfile "$file" SHA256 | findstr /v "SHA256 CertUtil" > ../recipe/checksums/"${file#setproxy-}".sha256
             fi
           done
           cd ..

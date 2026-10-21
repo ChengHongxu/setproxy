@@ -1,4 +1,4 @@
-# 📦 通过 Pixi 安装 setproxy
+# 通过 Pixi 安装 setproxy
 
 ## 快速安装
 
@@ -9,48 +9,52 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 # 2. 安装
 pixi global install setproxy
 
-# 3. 重开终端即可使用 ✓
+# 3. 接入当前 shell，然后重开终端
+setproxy init
 ```
 
-首次运行任意 `_setproxy` 命令时，会自动检测 shell 集成是否已配置：
-- 未配置时：自动将 `eval "$(_setproxy shell-init)"` 写入 `~/.zshrc` 或 `~/.bashrc`
-- 已配置时：静默跳过，不重复写入
+`setproxy init` 会识别你当前所在的 shell（zsh / bash / PowerShell），往对应的启动文件追加两行：
 
-重开终端后 `setproxy` 即可直接使用。
+```bash
+# setproxy
+eval "$(setproxy init zsh --print)"
+```
+
+也可以指定 shell：`setproxy init zsh`、`setproxy init bash`、`setproxy init pwsh`。重复执行不会重复写入。
 
 ## 使用
 
 ```bash
-# 设置代理
-setproxy 127.0.0.1 7890
-
-# WSL2 自动检测
-setproxy wsl
-
-# 查看状态
-setproxy status
-
-# 清除代理
-setproxy clear
+setproxy 127.0.0.1 7890   # 设置代理
+setproxy wsl              # WSL2 自动检测宿主机 IP
+setproxy status           # 查看状态
+setproxy clear            # 清除代理
 ```
 
-## 为什么需要 shell function？
+## 为什么需要 `setproxy init`
 
-由于 shell 的安全限制，子进程无法修改父进程的环境变量。通过添加一个简单的 function，我们用 `eval` 在当前 shell 执行 `_setproxy` 的输出，从而实现环境变量修改。
+子进程无法修改父进程的环境变量，所以修改当前 shell 环境的工具（conda、pyenv、nvm、zoxide、mise）都需要在启动文件里加载一个 shell 函数。
 
-这是一次性配置，之后就可以一直使用。
+pixi 和 brew 都不会在安装时替包修改 dotfiles：pixi 默认不执行包的 post-link 脚本，`pixi global` 的激活脚本也只作用于 trampoline 内部，进不了交互 shell。所以这一步由你执行一次 `setproxy init` 完成，setproxy 不会在其他命令里偷偷写入。
 
-## 关于 channel 配置
+没执行过 `setproxy init` 就运行 `setproxy 127.0.0.1 7890`，会提示先运行 `setproxy init`；执行过但还没重开终端，会提示 `source` 哪个文件。
 
-推荐使用追加方式，不影响已有 channels：
+## 从 0.2.x 升级
+
+0.2.x 的可执行文件叫 `_setproxy`，并会自动往 `~/.zshrc` / `~/.bashrc` 写入：
+
 ```bash
-pixi config append default-channels "https://chenghongxu.github.io/packages/conda" --global
+# >>> setproxy initialized <<<
+eval "$(_setproxy shell-init)"
 ```
 
-这样可以：
-- ✅ 保留 `conda-forge` 及其他已有 channels
-- ✅ 添加自定义 channel，可以安装 `setproxy`
-- ✅ 不会覆盖现有配置
+0.3.0 起 `_setproxy` 不再存在，这一行在新终端里会报 `command not found: _setproxy`。升级后执行一次：
+
+```bash
+setproxy init
+```
+
+它会删除上面这些旧行，写入新的配置。
 
 ## 卸载
 
@@ -58,40 +62,25 @@ pixi config append default-channels "https://chenghongxu.github.io/packages/cond
 pixi global uninstall setproxy
 ```
 
-然后从 shell 配置文件中删除 `setproxy` function。
+然后从 shell 启动文件中删除 `# setproxy` 和下面的 `setproxy init ... --print` 那一行。
 
 ## 故障排查
 
-### 找不到 setproxy 命令
-
-首次运行任意命令会自动配置，例如：
-```bash
-_setproxy status
-```
-然后重开终端即可。
-
 ### 代理未生效
 
-检查是否使用了 function：
+确认使用的是 shell 函数：
+
 ```bash
 type setproxy
 # 应该显示: setproxy is a shell function
 ```
 
-如果显示 `setproxy is /home/.../.pixi/bin/setproxy`，说明 shell function 还未加载。运行：
-```bash
-_setproxy status  # 触发自动配置
-```
-然后重开终端。
-
-检查环境变量：
-```bash
-env | grep -i proxy
-```
+如果显示 `setproxy is /home/.../.pixi/bin/setproxy`，说明还没执行 `setproxy init`，或者执行后还没重开终端。直接运行 `setproxy 127.0.0.1 7890` 会告诉你是哪一种。
 
 ### pixi 找不到包
 
 清除缓存后重试：
+
 ```bash
 rm -rf ~/.cache/rattler/cache/repodata/
 pixi global install setproxy

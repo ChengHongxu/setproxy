@@ -1,62 +1,39 @@
 mod cli;
 mod proxy;
-mod shell_init;
+mod shell;
 
 use anyhow::Result;
 use clap::Parser;
-use cli::{Cli, Commands};
+use cli::{Cli, Commands, Syntax};
 use colored::*;
 use proxy::{clear_proxy, detect_wsl_host, set_proxy, show_status, ProxyConfig};
-use shell_init::{auto_configure_shell, is_shell_configured};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Auto-configure shell integration on first use (if not already configured)
-    // This runs silently in the background - only shows message if it adds the config
-    if !is_shell_configured() {
-        // Only attempt auto-configure for non-shell-init commands
-        // shell-init is meant to be used manually, don't auto-configure during it
-        if !matches!(cli.command, Some(Commands::ShellInit)) {
-            let _ = auto_configure_shell(); // Ignore errors, don't block actual command
-        }
-    }
-
     match cli.command {
         Some(Commands::Clear) => {
-            clear_proxy()?;
+            clear_proxy(require_shell_function(cli.syntax))?;
         }
         Some(Commands::Status) => {
             show_status()?;
         }
-        Some(Commands::ShellInit) => {
-            // 输出 shell function 定义，供 eval 使用
-            // 用法: eval "$(_setproxy shell-init)" 添加到 ~/.zshrc 或 ~/.bashrc
-            println!(
-                r#"setproxy() {{
-    local _bin
-    _bin=$(command -v _setproxy 2>/dev/null) || {{
-        echo "✗ _setproxy not found, please install it first" >&2
-        return 1
-    }}
-    if [ "$1" = "status" ] || [ "$1" = "s" ]; then
-        "$_bin" "$@"
-    else
-        eval "$("$_bin" "$@")"
-    fi
-}}"#
-            );
-        }
-        Some(Commands::Init) => {
-            // 手动触发 shell 集成配置
-            auto_configure_shell()?;
+        Some(Commands::Init { shell, print }) => {
+            let shell = shell::resolve(shell)?;
+            if print {
+                // 启动文件中执行: eval "$(setproxy init zsh --print)"
+                print!("{}", shell::init_script(shell));
+            } else {
+                shell::install(shell)?;
+            }
         }
         Some(Commands::Wsl { port }) => {
+            let syntax = require_shell_function(cli.syntax);
             // WSL2 自动检测模式
             match detect_wsl_host() {
                 Ok(host) => {
-                    let config = ProxyConfig::new(host, port);
-                    set_proxy(&config)?;
+                    let config = ProxyConfig::new(host, port)?;
+                    set_proxy(&config, syntax)?;
                 }
                 Err(e) => {
                     eprintln!("{} {}", "✗".red().bold(), e);
@@ -67,8 +44,9 @@ fn main() -> Result<()> {
         None => {
             // 默认模式：设置代理
             if let (Some(host), Some(port)) = (cli.host, cli.port) {
-                let config = ProxyConfig::new(host, port);
-                set_proxy(&config)?;
+                let syntax = require_shell_function(cli.syntax);
+                let config = ProxyConfig::new(host, port)?;
+                set_proxy(&config, syntax)?;
             } else {
                 // 没有参数，显示帮助
                 eprintln!("{} 请提供代理地址和端口，或使用子命令", "✗".red().bold());
@@ -86,4 +64,13 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Only the shell function (which passes --syntax) can apply the printed
+/// code to the current shell; run directly, explain how to set it up.
+fn require_shell_function(syntax: Option<Syntax>) -> Syntax {
+    syntax.unwrap_or_else(|| {
+        shell::print_not_loaded_hint();
+        std::process::exit(1)
+    })
 }

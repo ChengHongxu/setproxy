@@ -19,11 +19,11 @@ mkdir -p recipe/checksums
 cd recipe/checksums
 
 # For each platform
-sha256sum _setproxy-linux-amd64 | cut -d' ' -f1 > linux-amd64.sha256
-sha256sum _setproxy-linux-arm64 | cut -d' ' -f1 > linux-arm64.sha256
-sha256sum _setproxy-darwin-amd64 | cut -d' ' -f1 > darwin-amd64.sha256
-sha256sum _setproxy-darwin-arm64 | cut -d' ' -f1 > darwin-arm64.sha256
-sha256sum _setproxy-windows-amd64.exe | cut -d' ' -f1 > windows-amd64.sha256
+sha256sum setproxy-linux-amd64 | cut -d' ' -f1 > linux-amd64.sha256
+sha256sum setproxy-linux-arm64 | cut -d' ' -f1 > linux-arm64.sha256
+sha256sum setproxy-darwin-amd64 | cut -d' ' -f1 > darwin-amd64.sha256
+sha256sum setproxy-darwin-arm64 | cut -d' ' -f1 > darwin-arm64.sha256
+sha256sum setproxy-windows-amd64.exe | cut -d' ' -f1 > windows-amd64.sha256
 ```
 
 ### 2. Build the package
@@ -47,7 +47,8 @@ pixi global install ./output/linux-64/setproxy-*.conda
 
 # Test
 setproxy --help
-source <(setproxy 127.0.0.1 7890)
+setproxy init
+setproxy 127.0.0.1 7890
 ```
 
 ## CI/CD Integration
@@ -65,8 +66,7 @@ The GitHub Actions workflow will:
 ```
 $PREFIX/
 ├── bin/
-│   ├── _setproxy          # Rust binary
-│   └── setproxy           # Wrapper script (sourced by user)
+│   └── setproxy           # Rust binary
 ```
 
 ## Usage After Installation
@@ -77,6 +77,9 @@ pixi config append channels "https://chenghongxu.github.io/packages" --global
 
 # Install
 pixi global install setproxy
+
+# Set up shell integration (once), then open a new terminal
+setproxy init
 
 # Use
 setproxy 127.0.0.1 7890

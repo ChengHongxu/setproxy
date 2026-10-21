@@ -39,11 +39,13 @@ setproxy clear
 
 ### Linux / macOS
 
-一键安装：
+一键安装（会自动执行 `setproxy init`）：
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.sh | sh
 source ~/.zshrc  # 或 ~/.bashrc
 ```
+
+其他方式安装后，执行一次 `setproxy init` 并重开终端。
 
 ### Windows (PowerShell)
 
@@ -172,10 +174,10 @@ setproxy clear
 
 ```bash
 # 删除二进制
-rm ~/.local/bin/_setproxy
+rm ~/.local/bin/setproxy
 
 # 从 shell 配置中移除（手动编辑）
-vim ~/.zshrc  # 删除 source ~/Workspace/setproxy/shell/setproxy.sh 行
+vim ~/.zshrc  # 删除 # setproxy 和 eval "$(setproxy init zsh --print)" 两行
 ```
 
 ### Windows
@@ -187,7 +189,7 @@ Remove-Item -Recurse "$env:LOCALAPPDATA\setproxy"
 # 从 PATH 中移除（手动在系统设置中操作）
 
 # 从 PowerShell profile 中移除（手动编辑）
-notepad $PROFILE
+notepad $PROFILE  # 删除 # setproxy 和 setproxy init powershell --print 两行
 ```
 
 ## 高级用法

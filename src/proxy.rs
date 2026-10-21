@@ -1,3 +1,4 @@
+use crate::cli::Syntax;
 use anyhow::Result;
 use colored::*;
 use std::env;
@@ -7,6 +8,9 @@ use anyhow::Context;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
+/// Variables managed by setproxy
+const PROXY_VARS: [&str; 3] = ["http_proxy", "https_proxy", "all_proxy"];
+
 /// Proxy configuration
 #[derive(Debug, Clone)]
 pub struct ProxyConfig {
@@ -15,8 +19,17 @@ pub struct ProxyConfig {
 }
 
 impl ProxyConfig {
-    pub fn new(host: String, port: u16) -> Self {
-        Self { host, port }
+    /// The host ends up inside shell code that gets eval'd, so only accept
+    /// characters that can appear in a hostname or IP address.
+    pub fn new(host: String, port: u16) -> Result<Self> {
+        let valid = !host.is_empty()
+            && host.chars().all(|c| {
+                c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | ':' | '[' | ']')
+            });
+        if !valid {
+            anyhow::bail!("无效的代理地址: {}", host);
+        }
+        Ok(Self { host, port })
     }
 
     pub fn http_url(&self) -> String {
@@ -58,23 +71,40 @@ pub fn detect_wsl_host() -> Result<String> {
     anyhow::bail!("Not in WSL2 environment or cannot get host IP")
 }
 
+/// Print code that sets the variable, in the given syntax
+fn set_var(syntax: Syntax, name: &str, value: &str) -> String {
+    // Values are validated in ProxyConfig::new and contain no quotes
+    match syntax {
+        Syntax::Posix => format!("export {}='{}'", name, value),
+        Syntax::Powershell => format!("$env:{} = '{}'", name, value),
+    }
+}
+
+/// Print code that removes the variable, in the given syntax
+fn unset_var(syntax: Syntax, name: &str) -> String {
+    match syntax {
+        Syntax::Posix => format!("unset {}", name),
+        Syntax::Powershell => format!("Remove-Item Env:{} -ErrorAction SilentlyContinue", name),
+    }
+}
+
 /// Set proxy environment variables
-pub fn set_proxy(config: &ProxyConfig) -> Result<()> {
-    // Output shell commands for eval
-    println!("export http_proxy=\"{}\"", config.http_url());
-    println!("export https_proxy=\"{}\"", config.http_url());
-    println!("export all_proxy=\"{}\"", config.socks5_url());
-    println!("echo \"✓ 代理已启用: {}\"", config.http_url());
+pub fn set_proxy(config: &ProxyConfig, syntax: Syntax) -> Result<()> {
+    // stdout is code for the shell function to evaluate; messages go to stderr
+    let values = [config.http_url(), config.http_url(), config.socks5_url()];
+    for (name, value) in PROXY_VARS.iter().zip(&values) {
+        println!("{}", set_var(syntax, name, value));
+    }
+    eprintln!("{} 代理已启用: {}", "✓".green().bold(), config.http_url());
     Ok(())
 }
 
 /// Clear proxy environment variables
-pub fn clear_proxy() -> Result<()> {
-    // Output shell commands for eval
-    println!("unset http_proxy");
-    println!("unset https_proxy");
-    println!("unset all_proxy");
-    println!("echo \"✓ 代理已清除\"");
+pub fn clear_proxy(syntax: Syntax) -> Result<()> {
+    for name in PROXY_VARS {
+        println!("{}", unset_var(syntax, name));
+    }
+    eprintln!("{} 代理已清除", "✓".green().bold());
     Ok(())
 }
 
@@ -115,8 +145,33 @@ mod tests {
 
     #[test]
     fn test_proxy_config() {
-        let config = ProxyConfig::new("192.168.1.1".to_string(), 8080);
+        let config = ProxyConfig::new("192.168.1.1".to_string(), 8080).unwrap();
         assert_eq!(config.http_url(), "http://192.168.1.1:8080");
         assert_eq!(config.socks5_url(), "socks5://192.168.1.1:8080");
+    }
+
+    #[test]
+    fn test_rejects_shell_metacharacters() {
+        for host in ["", "a;rm -rf ~", "$(id)", "a'b", "a b", "`id`"] {
+            assert!(
+                ProxyConfig::new(host.to_string(), 8080).is_err(),
+                "{host:?}"
+            );
+        }
+        assert!(ProxyConfig::new("[::1]".to_string(), 8080).is_ok());
+        assert!(ProxyConfig::new("proxy.local".to_string(), 8080).is_ok());
+    }
+
+    #[test]
+    fn test_syntax() {
+        assert_eq!(
+            set_var(Syntax::Posix, "http_proxy", "x"),
+            "export http_proxy='x'"
+        );
+        assert_eq!(
+            set_var(Syntax::Powershell, "http_proxy", "x"),
+            "$env:http_proxy = 'x'"
+        );
+        assert_eq!(unset_var(Syntax::Posix, "all_proxy"), "unset all_proxy");
     }
 }
