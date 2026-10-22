@@ -51,6 +51,7 @@ fn test_status_command() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn test_status_lists_upper_case_variables() {
     setproxy()
         .arg("status")
@@ -75,14 +76,23 @@ fn test_set_proxy_outputs_posix() {
         .stderr(predicate::str::contains("代理已启用"));
 
     let stdout = String::from_utf8_lossy(&assert.get_output().stdout).to_string();
-    for line in [
-        "export http_proxy='http://127.0.0.1:7890'",
-        "export https_proxy='http://127.0.0.1:7890'",
-        "export all_proxy='socks5://127.0.0.1:7890'",
-        "export HTTP_PROXY='http://127.0.0.1:7890'",
-        "export HTTPS_PROXY='http://127.0.0.1:7890'",
-        "export ALL_PROXY='socks5://127.0.0.1:7890'",
-    ] {
+    let lines = if cfg!(windows) {
+        &[
+            "export http_proxy='http://127.0.0.1:7890'",
+            "export https_proxy='http://127.0.0.1:7890'",
+            "export all_proxy='socks5://127.0.0.1:7890'",
+        ][..]
+    } else {
+        &[
+            "export http_proxy='http://127.0.0.1:7890'",
+            "export https_proxy='http://127.0.0.1:7890'",
+            "export all_proxy='socks5://127.0.0.1:7890'",
+            "export HTTP_PROXY='http://127.0.0.1:7890'",
+            "export HTTPS_PROXY='http://127.0.0.1:7890'",
+            "export ALL_PROXY='socks5://127.0.0.1:7890'",
+        ][..]
+    };
+    for line in lines {
         assert!(stdout.contains(line), "missing {line:?} in:\n{stdout}");
     }
 }
@@ -105,14 +115,19 @@ fn test_clear_outputs_clear() {
         .assert()
         .success();
     let stdout = String::from_utf8_lossy(&assert.get_output().stdout).to_string();
-    for var in [
-        "http_proxy",
-        "https_proxy",
-        "all_proxy",
-        "HTTP_PROXY",
-        "HTTPS_PROXY",
-        "ALL_PROXY",
-    ] {
+    let vars = if cfg!(windows) {
+        &["http_proxy", "https_proxy", "all_proxy"][..]
+    } else {
+        &[
+            "http_proxy",
+            "https_proxy",
+            "all_proxy",
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+        ][..]
+    };
+    for var in vars {
         assert!(
             stdout.contains(&format!("unset {var}\n")),
             "missing unset {var}"
