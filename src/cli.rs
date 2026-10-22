@@ -59,9 +59,11 @@ pub enum Commands {
         /// Shell to set up; detected from the current shell if omitted
         #[arg(value_enum)]
         shell: Option<Shell>,
+    },
 
-        /// Print the shell integration instead (this is what the startup file runs)
-        #[arg(long)]
-        print: bool,
+    /// Print the shell function (run by the line `setproxy init` adds)
+    Hook {
+        #[arg(value_enum)]
+        shell: Shell,
     },
 }

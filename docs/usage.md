@@ -59,7 +59,12 @@ iwr -useb https://raw.githubusercontent.com/ChengHongxu/setproxy/main/install.ps
 
 ### WSL2
 
-在 WSL2 中，`setproxy wsl` 会自动检测宿主机 IP（通过 `/etc/resolv.conf`）。
+在 WSL2 中，`setproxy wsl` 会根据网络模式（`wslinfo --networking-mode`）选择宿主机地址：
+
+- mirrored 模式：Linux 与 Windows 共享 localhost，使用 `127.0.0.1`
+- NAT 模式：使用默认网关（`ip route show default`）
+
+如果 `.wslconfig` 中开启了 `autoProxy=true`，WSL 会在启动时自动设置 `http_proxy`、`HTTP_PROXY` 等变量，所以新开的终端可能已经带有代理。`setproxy clear` 会把大小写两套变量一起清除。
 
 ## 实际使用场景
 
@@ -116,6 +121,7 @@ setproxy clear
 | `http_proxy` | `http://host:port` | HTTP 请求代理 |
 | `https_proxy` | `http://host:port` | HTTPS 请求代理 |
 | `all_proxy` | `socks5://host:port` | SOCKS5 通用代理 |
+| `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` | 同上 | 大写版本，部分工具（Go、Java 等）只读大写 |
 
 **注意**：
 - 大多数工具（curl、wget、git、apt）会自动识别这些变量
@@ -148,7 +154,8 @@ setproxy clear
 
 1. **手动查看 IP**：
    ```bash
-   cat /etc/resolv.conf
+   wslinfo --networking-mode   # mirrored 时直接用 127.0.0.1
+   ip route show default       # NAT 时 via 后面就是宿主机 IP
    ```
 
 2. **手动指定**：
@@ -177,7 +184,7 @@ setproxy clear
 rm ~/.local/bin/setproxy
 
 # 从 shell 配置中移除（手动编辑）
-vim ~/.zshrc  # 删除 # setproxy 和 eval "$(setproxy init zsh --print)" 两行
+vim ~/.zshrc  # 删除 # setproxy 和 eval "$(setproxy hook zsh)" 两行
 ```
 
 ### Windows
@@ -189,7 +196,7 @@ Remove-Item -Recurse "$env:LOCALAPPDATA\setproxy"
 # 从 PATH 中移除（手动在系统设置中操作）
 
 # 从 PowerShell profile 中移除（手动编辑）
-notepad $PROFILE  # 删除 # setproxy 和 setproxy init powershell --print 两行
+notepad $PROFILE  # 删除 # setproxy 和 setproxy hook powershell 两行
 ```
 
 ## 高级用法

@@ -29,9 +29,6 @@ try {
     exit 1
 }
 
-# Remove files installed by setproxy 0.2.x
-Remove-Item "$installDir\_setproxy.exe", "$installDir\setproxy.ps1" -ErrorAction SilentlyContinue
-
 # Add to PATH if not already there
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($currentPath -notlike "*$installDir*") {

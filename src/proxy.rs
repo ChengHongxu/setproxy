@@ -8,8 +8,27 @@ use anyhow::Context;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
-/// Variables managed by setproxy
-const PROXY_VARS: [&str; 3] = ["http_proxy", "https_proxy", "all_proxy"];
+/// Variables managed by setproxy. Tools disagree on which case they read
+/// (curl ignores HTTP_PROXY, many Go and Java tools read only upper case),
+/// and WSL's autoProxy sets both, so both are set and cleared.
+const PROXY_VARS: [&str; 6] = [
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+];
+
+/// Environment variable names are case-insensitive on Windows, where the
+/// upper-case names would refer to the same variables again
+fn proxy_vars() -> &'static [&'static str] {
+    if cfg!(windows) {
+        &PROXY_VARS[..3]
+    } else {
+        &PROXY_VARS
+    }
+}
 
 /// Proxy configuration
 #[derive(Debug, Clone)]
@@ -39,6 +58,15 @@ impl ProxyConfig {
     pub fn socks5_url(&self) -> String {
         format!("socks5://{}:{}", self.host, self.port)
     }
+
+    /// all_proxy gets the SOCKS URL, the others the HTTP URL
+    fn url_for(&self, var: &str) -> String {
+        if var.eq_ignore_ascii_case("all_proxy") {
+            self.socks5_url()
+        } else {
+            self.http_url()
+        }
+    }
 }
 
 /// Detect WSL2 Windows host IP
@@ -47,28 +75,48 @@ pub fn detect_wsl_host() -> Result<String> {
     {
         // Check if running in WSL environment
         if let Ok(wsl_distro) = env::var("WSL_DISTRO_NAME") {
+            let mirrored = wsl_networking_mode().as_deref() == Some("mirrored");
+
             use std::io::IsTerminal;
             if std::io::stdout().is_terminal() {
-                eprintln!("{} WSL: {}", "✓".green(), wsl_distro);
+                let mode = if mirrored { "mirrored" } else { "NAT" };
+                eprintln!("{} WSL: {} ({})", "✓".green(), wsl_distro, mode);
             }
 
-            let output = Command::new("sh")
-                .arg("-c")
-                .arg("ip route | grep default | awk '{print $3}' | head -n1")
+            // Mirrored networking shares localhost with Windows
+            if mirrored {
+                return Ok("127.0.0.1".to_string());
+            }
+
+            // NAT networking: the Windows host is the default gateway
+            let output = Command::new("ip")
+                .args(["route", "show", "default"])
                 .output()
                 .context("Cannot get WSL host IP")?;
 
             if output.status.success() {
-                let host = String::from_utf8_lossy(&output.stdout).trim().to_string();
-
-                if !host.is_empty() {
-                    return Ok(host);
+                let routes = String::from_utf8_lossy(&output.stdout);
+                if let Some(host) = routes.split_whitespace().skip_while(|w| *w != "via").nth(1) {
+                    return Ok(host.to_string());
                 }
             }
         }
     }
 
     anyhow::bail!("Not in WSL2 environment or cannot get host IP")
+}
+
+/// "nat" or "mirrored", from `wslinfo` (WSL 2.0+)
+#[cfg(target_os = "linux")]
+fn wsl_networking_mode() -> Option<String> {
+    let output = Command::new("wslinfo")
+        .arg("--networking-mode")
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 /// Print code that sets the variable, in the given syntax
@@ -91,9 +139,8 @@ fn unset_var(syntax: Syntax, name: &str) -> String {
 /// Set proxy environment variables
 pub fn set_proxy(config: &ProxyConfig, syntax: Syntax) -> Result<()> {
     // stdout is code for the shell function to evaluate; messages go to stderr
-    let values = [config.http_url(), config.http_url(), config.socks5_url()];
-    for (name, value) in PROXY_VARS.iter().zip(&values) {
-        println!("{}", set_var(syntax, name, value));
+    for name in proxy_vars() {
+        println!("{}", set_var(syntax, name, &config.url_for(name)));
     }
     eprintln!("{} 代理已启用: {}", "✓".green().bold(), config.http_url());
     Ok(())
@@ -101,7 +148,7 @@ pub fn set_proxy(config: &ProxyConfig, syntax: Syntax) -> Result<()> {
 
 /// Clear proxy environment variables
 pub fn clear_proxy(syntax: Syntax) -> Result<()> {
-    for name in PROXY_VARS {
+    for name in proxy_vars() {
         println!("{}", unset_var(syntax, name));
     }
     eprintln!("{} 代理已清除", "✓".green().bold());
@@ -113,17 +160,9 @@ pub fn show_status() -> Result<()> {
     eprintln!("{} 当前代理状态:", "🌐".bold());
     eprintln!();
 
-    let vars = [
-        "http_proxy",
-        "https_proxy",
-        "all_proxy",
-        "HTTP_PROXY",
-        "HTTPS_PROXY",
-        "ALL_PROXY",
-    ];
     let mut found = false;
 
-    for var in &vars {
+    for var in proxy_vars() {
         if let Ok(value) = env::var(var) {
             if !value.is_empty() {
                 eprintln!("  {} = {}", var.cyan(), value.green());
@@ -148,6 +187,8 @@ mod tests {
         let config = ProxyConfig::new("192.168.1.1".to_string(), 8080).unwrap();
         assert_eq!(config.http_url(), "http://192.168.1.1:8080");
         assert_eq!(config.socks5_url(), "socks5://192.168.1.1:8080");
+        assert_eq!(config.url_for("ALL_PROXY"), "socks5://192.168.1.1:8080");
+        assert_eq!(config.url_for("HTTPS_PROXY"), "http://192.168.1.1:8080");
     }
 
     #[test]

@@ -1,6 +1,6 @@
 # setproxy shell integration for bash and zsh.
 # `setproxy init` adds this line to ~/.zshrc or ~/.bashrc:
-#   eval "$(setproxy init zsh --print)"
+#   eval "$(setproxy hook zsh)"
 #
 # A child process cannot change its parent's environment, so the setproxy
 # executable prints shell code and this function evals it in the current shell.
@@ -8,7 +8,7 @@
 setproxy() {
     # Read-only commands print to the terminal; nothing to eval
     case "${1:-}" in
-        status|s|init|help)
+        status|s|init|hook|help)
             command setproxy "$@"
             return
             ;;

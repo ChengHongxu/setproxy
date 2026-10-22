@@ -18,14 +18,12 @@ fn main() -> Result<()> {
         Some(Commands::Status) => {
             show_status()?;
         }
-        Some(Commands::Init { shell, print }) => {
-            let shell = shell::resolve(shell)?;
-            if print {
-                // 启动文件中执行: eval "$(setproxy init zsh --print)"
-                print!("{}", shell::init_script(shell));
-            } else {
-                shell::install(shell)?;
-            }
+        Some(Commands::Init { shell }) => {
+            shell::install(shell::resolve(shell)?)?;
+        }
+        Some(Commands::Hook { shell }) => {
+            // 启动文件中执行: eval "$(setproxy hook zsh)"
+            print!("{}", shell::hook_script(shell));
         }
         Some(Commands::Wsl { port }) => {
             let syntax = require_shell_function(cli.syntax);

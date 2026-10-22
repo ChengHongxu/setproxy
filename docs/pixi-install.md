@@ -17,10 +17,10 @@ setproxy init
 
 ```bash
 # setproxy
-eval "$(setproxy init zsh --print)"
+eval "$(setproxy hook zsh)"
 ```
 
-也可以指定 shell：`setproxy init zsh`、`setproxy init bash`、`setproxy init pwsh`。重复执行不会重复写入。
+`init` 只运行一次，负责写入这一行；`hook` 由这一行在每次开终端时运行，输出 shell 函数。也可以指定 shell：`setproxy init zsh`、`setproxy init bash`、`setproxy init pwsh`。重复执行不会重复写入。
 
 ## 使用
 
@@ -39,30 +39,13 @@ pixi 和 brew 都不会在安装时替包修改 dotfiles：pixi 默认不执行�
 
 没执行过 `setproxy init` 就运行 `setproxy 127.0.0.1 7890`，会提示先运行 `setproxy init`；执行过但还没重开终端，会提示 `source` 哪个文件。
 
-## 从 0.2.x 升级
-
-0.2.x 的可执行文件叫 `_setproxy`，并会自动往 `~/.zshrc` / `~/.bashrc` 写入：
-
-```bash
-# >>> setproxy initialized <<<
-eval "$(_setproxy shell-init)"
-```
-
-0.3.0 起 `_setproxy` 不再存在，这一行在新终端里会报 `command not found: _setproxy`。升级后执行一次：
-
-```bash
-setproxy init
-```
-
-它会删除上面这些旧行，写入新的配置。
-
 ## 卸载
 
 ```bash
 pixi global uninstall setproxy
 ```
 
-然后从 shell 启动文件中删除 `# setproxy` 和下面的 `setproxy init ... --print` 那一行。
+然后从 shell 启动文件中删除 `# setproxy` 和下面的 `setproxy hook ...` 那一行。
 
 ## 故障排查
 

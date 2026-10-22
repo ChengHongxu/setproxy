@@ -62,6 +62,9 @@ setproxy clear             # 清除代理
 设置后生效的环境变量：
 - `http_proxy` / `https_proxy` → `http://host:port`
 - `all_proxy` → `socks5://host:port`
+- 以及对应的大写版本 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`（Windows 环境变量不区分大小写，只设一套）
+
+`setproxy clear` 会把大小写两套一起清除，`no_proxy` 不受影响。
 
 详细用法见 [docs/usage.md](docs/usage.md)。
 

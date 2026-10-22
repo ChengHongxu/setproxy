@@ -22,10 +22,10 @@ setproxy/
 │   ├── main.rs      # 入口，命令分发
 │   ├── cli.rs       # 命令行参数定义（clap）
 │   ├── proxy.rs     # 核心逻辑：set/clear/status/wsl，按 --syntax 输出代码
-│   └── shell.rs     # `init`：识别 shell、写启动文件、迁移旧配置；`--print` 原样输出 shell/init.*
+│   └── shell.rs     # `init`：识别 shell、写启动文件；`hook`：原样输出 shell/hook.*
 ├── shell/
-│   ├── init.sh      # bash/zsh shell 函数（setproxy init zsh|bash --print 输出）
-│   └── init.ps1     # PowerShell 函数（setproxy init powershell --print 输出）
+│   ├── hook.sh      # bash/zsh shell 函数（setproxy hook zsh|bash 输出）
+│   └── hook.ps1     # PowerShell 函数（setproxy hook powershell 输出）
 ├── docs/            # 文档
 ├── install.sh       # 一键安装脚本
 ├── Cargo.toml

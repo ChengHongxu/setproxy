@@ -1,7 +1,7 @@
 schema_version: 1
 
 context:
-  version: "0.3.0"
+  version: "0.3.1"
 
 package:
   name: setproxy
@@ -67,6 +67,9 @@ about:
 
         setproxy init            # detects zsh / bash / PowerShell
         setproxy init zsh        # or name the shell
+
+    It adds `eval "$(setproxy hook zsh)"` (or the bash / PowerShell
+    equivalent) to the startup file.
 
     Usage:
       setproxy 127.0.0.1 7890  # Set proxy

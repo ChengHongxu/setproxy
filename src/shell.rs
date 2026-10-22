@@ -7,26 +7,26 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const POSIX_INIT: &str = include_str!("../shell/init.sh");
-const POWERSHELL_INIT: &str = include_str!("../shell/init.ps1");
+const POSIX_HOOK: &str = include_str!("../shell/hook.sh");
+const POWERSHELL_HOOK: &str = include_str!("../shell/hook.ps1");
 
-/// Comment written above the init line
+/// Comment written above the hook line
 const COMMENT: &str = "# setproxy";
 
-/// Shell integration code printed by `setproxy init <shell> --print`
-pub fn init_script(shell: Shell) -> &'static str {
+/// Shell function printed by `setproxy hook <shell>`
+pub fn hook_script(shell: Shell) -> &'static str {
     match shell {
-        Shell::Zsh | Shell::Bash => POSIX_INIT,
-        Shell::Powershell => POWERSHELL_INIT,
+        Shell::Zsh | Shell::Bash => POSIX_HOOK,
+        Shell::Powershell => POWERSHELL_HOOK,
     }
 }
 
 /// Line that `setproxy init` adds to the startup file
-fn init_line(shell: Shell) -> &'static str {
+fn hook_line(shell: Shell) -> &'static str {
     match shell {
-        Shell::Zsh => r#"eval "$(setproxy init zsh --print)""#,
-        Shell::Bash => r#"eval "$(setproxy init bash --print)""#,
-        Shell::Powershell => "Invoke-Expression (& setproxy init powershell --print | Out-String)",
+        Shell::Zsh => r#"eval "$(setproxy hook zsh)""#,
+        Shell::Bash => r#"eval "$(setproxy hook bash)""#,
+        Shell::Powershell => "Invoke-Expression (& setproxy hook powershell | Out-String)",
     }
 }
 
@@ -36,11 +36,11 @@ pub fn resolve(shell: Option<Shell>) -> Result<Shell> {
         .context("无法识别当前 shell，请指定: setproxy init <zsh|bash|pwsh>")
 }
 
-/// `setproxy init`: add the init line to the shell's startup file(s)
+/// `setproxy init`: add the hook line to the shell's startup file(s)
 pub fn install(shell: Shell) -> Result<()> {
     let files = startup_files(shell)?;
     for file in &files {
-        install_into(file, init_line(shell))?;
+        install_into(file, hook_line(shell))?;
     }
     eprintln!(
         "{} 重开终端，或运行: {}",
@@ -57,7 +57,7 @@ pub fn print_not_loaded_hint() {
         .and_then(|(shell, files)| {
             let file = files
                 .into_iter()
-                .find(|f| has_line(&read(f).unwrap_or_default(), init_line(shell)))?;
+                .find(|f| has_line(&read(f).unwrap_or_default(), hook_line(shell)))?;
             Some((shell, file))
         });
 
@@ -77,44 +77,61 @@ pub fn print_not_loaded_hint() {
 
 fn install_into(file: &Path, line: &str) -> Result<()> {
     let content = read(file).with_context(|| format!("无法读取 {}", file.display()))?;
+    if has_line(&content, line) {
+        eprintln!("{} {} 已配置", "✓".green().bold(), pretty(file));
+        return Ok(());
+    }
+
     let eol = if content.contains("\r\n") {
         "\r\n"
     } else {
         "\n"
     };
-    let (mut updated, removed) = strip_legacy(&content, eol);
-    let present = has_line(&updated, line);
-
-    if present && removed.is_empty() {
-        eprintln!("{} {} 已配置", "✓".green().bold(), pretty(file));
-        return Ok(());
-    }
-
-    if !present {
-        if !updated.is_empty() {
-            if !updated.ends_with('\n') {
-                updated.push_str(eol);
-            }
-            updated.push_str(eol);
-        }
-        updated.push_str(&format!("{COMMENT}{eol}{line}{eol}"));
-    }
+    let (updated, replaced) = match replace_previous(&content, line, eol) {
+        Some(updated) => (updated, true),
+        None => (append(&content, line, eol), false),
+    };
 
     if let Some(dir) = file.parent() {
         fs::create_dir_all(dir)?;
     }
     fs::write(file, updated).with_context(|| format!("无法写入 {}", file.display()))?;
-
-    for old in &removed {
-        eprintln!("{} 已移除旧版配置: {}", "-".yellow().bold(), old);
-    }
     eprintln!(
         "{} {} {}",
         "✓".green().bold(),
-        if present { "已更新" } else { "已写入" },
+        if replaced { "已更新" } else { "已写入" },
         pretty(file)
     );
     Ok(())
+}
+
+/// Replace the hook line an earlier `setproxy init` left under "# setproxy",
+/// so re-running init after the line changes updates it in place
+fn replace_previous(content: &str, line: &str, eol: &str) -> Option<String> {
+    let mut lines: Vec<&str> = content.lines().collect();
+    let i = lines.windows(2).position(|w| {
+        let next = w[1].trim();
+        w[0].trim() == COMMENT
+            && next.contains("setproxy")
+            && (next.starts_with("eval ") || next.starts_with("Invoke-Expression "))
+    })?;
+    lines[i + 1] = line;
+    let mut out = lines.join(eol);
+    out.push_str(eol);
+    Some(out)
+}
+
+/// Append the hook line, separated from existing content by a blank line
+fn append(content: &str, line: &str, eol: &str) -> String {
+    let mut out = content.to_string();
+    if !out.is_empty() {
+        if !out.ends_with('\n') {
+            out.push_str(eol);
+        }
+        out.push_str(eol);
+    }
+    out.push_str(&format!("{COMMENT}{eol}{line}{eol}"));
+    out
 }
 
 /// Read a startup file; a missing one is empty
@@ -127,52 +144,6 @@ fn read(file: &Path) -> std::io::Result<String> {
 
 fn has_line(content: &str, line: &str) -> bool {
     content.lines().any(|l| l.trim() == line)
-}
-
-/// Lines written by setproxy 0.2.x (whose binary was `_setproxy`) or its
-/// installers. Matched narrowly so the user's own lines are never touched.
-fn is_legacy(line: &str) -> bool {
-    let line = line.trim();
-    let sources = |name: &str| {
-        (line.starts_with("source ") || line.starts_with(". "))
-            && line.trim_end_matches(['"', '\'']).ends_with(name)
-    };
-    line == "# >>> setproxy initialized <<<"
-        || line == "# setproxy - source shell function"
-        || line.starts_with(r#"eval "$(_setproxy "#)
-        || line.starts_with("Invoke-Expression (& _setproxy ")
-        || sources("setproxy.sh")
-        || sources("setproxy.ps1")
-        || sources("$(which setproxy)")
-}
-
-/// Remove legacy lines (and a "# setproxy" comment right above one).
-/// Returns the content unchanged when there is nothing to remove.
-fn strip_legacy(content: &str, eol: &str) -> (String, Vec<String>) {
-    let mut kept: Vec<&str> = Vec::new();
-    let mut removed = Vec::new();
-    for line in content.lines() {
-        if is_legacy(line) {
-            removed.push(line.trim().to_string());
-            if kept.last().is_some_and(|l| l.trim() == COMMENT) {
-                kept.pop();
-            }
-        } else {
-            kept.push(line);
-        }
-    }
-    if removed.is_empty() {
-        return (content.to_string(), removed);
-    }
-
-    while kept.last().is_some_and(|l| l.trim().is_empty()) {
-        kept.pop();
-    }
-    let mut out = kept.join(eol);
-    if !out.is_empty() {
-        out.push_str(eol);
-    }
-    (out, removed)
 }
 
 /// Startup files that load the integration for this shell
@@ -316,26 +287,30 @@ mod tests {
     }
 
     #[test]
-    fn test_strip_legacy() {
-        let rc = concat!(
-            "export A=1\n",
-            "\n",
-            "# >>> setproxy initialized <<<\n",
-            "eval \"$(_setproxy shell-init)\"\n",
-            "alias sp='setproxy 1.2.3.4 80'\n",
-            "# setproxy\n",
-            ". \"C:\\x\\setproxy.ps1\"\n",
-            "\n",
+    fn test_replace_previous() {
+        let line = hook_line(Shell::Zsh);
+        let rc = "export A=1\n# setproxy\neval \"$(setproxy init zsh --print)\"\nexport B=2\n";
+        assert_eq!(
+            replace_previous(rc, line, "\n").unwrap(),
+            format!("export A=1\n# setproxy\n{line}\nexport B=2\n")
         );
-        let (kept, removed) = strip_legacy(rc, "\n");
-        assert_eq!(kept, "export A=1\n\nalias sp='setproxy 1.2.3.4 80'\n");
-        assert_eq!(removed.len(), 3);
 
-        // The user's own lines that merely mention setproxy stay
-        let own = "source ~/my-setproxy-notes.txt\nexport X=_setproxy\n";
-        assert_eq!(strip_legacy(own, "\n"), (own.to_string(), vec![]));
+        // The user's own lines under a similar comment stay
+        let own = "# setproxy\nalias sp='setproxy 1.2.3.4 80'\n";
+        assert_eq!(replace_previous(own, line, "\n"), None);
+    }
 
-        let current = format!("{COMMENT}\n{}\n", init_line(Shell::Zsh));
-        assert_eq!(strip_legacy(&current, "\n"), (current.clone(), vec![]));
+    #[test]
+    fn test_append() {
+        let line = hook_line(Shell::Bash);
+        assert_eq!(append("", line, "\n"), format!("# setproxy\n{line}\n"));
+        assert_eq!(
+            append("export A=1", line, "\n"),
+            format!("export A=1\n\n# setproxy\n{line}\n")
+        );
+        assert_eq!(
+            append("export A=1\r\n", line, "\r\n"),
+            format!("export A=1\r\n\r\n# setproxy\r\n{line}\r\n")
+        );
     }
 }

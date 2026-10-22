@@ -29,10 +29,6 @@ mkdir -p "${INSTALL_DIR}"
 curl -fsSL "${URL}" -o "${INSTALL_DIR}/setproxy"
 chmod +x "${INSTALL_DIR}/setproxy"
 
-# Remove files installed by setproxy 0.2.x
-rm -f "${INSTALL_DIR}/_setproxy" "${HOME}/.local/share/setproxy/setproxy.sh"
-rmdir "${HOME}/.local/share/setproxy" 2>/dev/null || true
-
 # Detect shell RC file
 SHELL_NAME=""
 SHELL_RC=""

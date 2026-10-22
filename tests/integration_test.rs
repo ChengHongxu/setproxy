@@ -51,20 +51,40 @@ fn test_status_command() {
 }
 
 #[test]
-fn test_set_proxy_outputs_posix() {
+fn test_status_lists_upper_case_variables() {
     setproxy()
+        .arg("status")
+        .env_remove("http_proxy")
+        .env_remove("https_proxy")
+        .env("HTTPS_PROXY", "http://10.0.0.1:3128")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "HTTPS_PROXY = http://10.0.0.1:3128",
+        ));
+}
+
+#[test]
+fn test_set_proxy_outputs_posix() {
+    let assert = setproxy()
         .args(["--syntax", "posix", "127.0.0.1", "7890"])
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "export http_proxy='http://127.0.0.1:7890'",
-        ))
-        .stdout(predicate::str::contains(
-            "export all_proxy='socks5://127.0.0.1:7890'",
-        ))
         // Messages go to stderr so stdout stays pure shell code
         .stdout(predicate::str::contains("echo").not())
         .stderr(predicate::str::contains("代理已启用"));
+
+    let stdout = String::from_utf8_lossy(&assert.get_output().stdout).to_string();
+    for line in [
+        "export http_proxy='http://127.0.0.1:7890'",
+        "export https_proxy='http://127.0.0.1:7890'",
+        "export all_proxy='socks5://127.0.0.1:7890'",
+        "export HTTP_PROXY='http://127.0.0.1:7890'",
+        "export HTTPS_PROXY='http://127.0.0.1:7890'",
+        "export ALL_PROXY='socks5://127.0.0.1:7890'",
+    ] {
+        assert!(stdout.contains(line), "missing {line:?} in:\n{stdout}");
+    }
 }
 
 #[test]
@@ -80,13 +100,24 @@ fn test_set_proxy_outputs_powershell() {
 
 #[test]
 fn test_clear_outputs_clear() {
-    setproxy()
+    let assert = setproxy()
         .args(["--syntax", "posix", "clear"])
         .assert()
-        .success()
-        .stdout(predicate::str::contains("unset http_proxy"))
-        .stdout(predicate::str::contains("unset https_proxy"))
-        .stdout(predicate::str::contains("unset all_proxy"));
+        .success();
+    let stdout = String::from_utf8_lossy(&assert.get_output().stdout).to_string();
+    for var in [
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+    ] {
+        assert!(
+            stdout.contains(&format!("unset {var}\n")),
+            "missing unset {var}"
+        );
+    }
 
     setproxy()
         .args(["--syntax", "powershell", "c"])
@@ -121,21 +152,23 @@ fn test_without_shell_function_prints_hint() {
 }
 
 #[test]
-fn test_init_print() {
+fn test_hook() {
     for shell in ["zsh", "bash"] {
         setproxy()
-            .args(["init", shell, "--print"])
+            .args(["hook", shell])
             .assert()
             .success()
             .stdout(predicate::str::contains("setproxy() {"))
             .stdout(predicate::str::contains("command setproxy --syntax posix"));
     }
     setproxy()
-        .args(["init", "pwsh", "--print"])
+        .args(["hook", "pwsh"])
         .assert()
         .success()
         .stdout(predicate::str::contains("function setproxy"));
 
+    // The startup file always names the shell
+    setproxy().arg("hook").assert().failure();
     setproxy().args(["init", "fish"]).assert().failure();
 }
 
@@ -152,7 +185,28 @@ fn test_init_appends_once_and_keeps_content() {
 
     assert_eq!(
         fs::read_to_string(&rc).unwrap(),
-        "export A=1\n\n# setproxy\neval \"$(setproxy init zsh --print)\"\n"
+        "export A=1\n\n# setproxy\neval \"$(setproxy hook zsh)\"\n"
+    );
+    fs::remove_dir_all(&home).unwrap();
+}
+
+#[test]
+fn test_init_updates_previous_line_in_place() {
+    let home = temp_home("update");
+    let rc = home.join(".bashrc");
+    fs::write(
+        &rc,
+        "export A=1\n# setproxy\neval \"$(setproxy init bash --print)\"\nexport B=2\n",
+    )
+    .unwrap();
+
+    init_in(&home, "bash")
+        .success()
+        .stderr(predicate::str::contains("已更新"));
+
+    assert_eq!(
+        fs::read_to_string(&rc).unwrap(),
+        "export A=1\n# setproxy\neval \"$(setproxy hook bash)\"\nexport B=2\n"
     );
     fs::remove_dir_all(&home).unwrap();
 }
@@ -169,31 +223,11 @@ fn test_init_creates_missing_file_and_respects_zdotdir() {
         .assert()
         .success();
 
-    assert!(fs::read_to_string(zdotdir.join(".zshrc"))
-        .unwrap()
-        .starts_with("# setproxy\n"));
-    assert!(!home.join(".zshrc").exists());
-    fs::remove_dir_all(&home).unwrap();
-}
-
-#[test]
-fn test_init_migrates_legacy_config() {
-    let home = temp_home("migrate");
-    let rc = home.join(".bashrc");
-    fs::write(
-        &rc,
-        "export A=1\n\n# >>> setproxy initialized <<<\neval \"$(_setproxy shell-init)\"\n",
-    )
-    .unwrap();
-
-    init_in(&home, "bash")
-        .success()
-        .stderr(predicate::str::contains("已移除旧版配置"));
-
     assert_eq!(
-        fs::read_to_string(&rc).unwrap(),
-        "export A=1\n\n# setproxy\neval \"$(setproxy init bash --print)\"\n"
+        fs::read_to_string(zdotdir.join(".zshrc")).unwrap(),
+        "# setproxy\neval \"$(setproxy hook zsh)\"\n"
     );
+    assert!(!home.join(".zshrc").exists());
     fs::remove_dir_all(&home).unwrap();
 }
 
